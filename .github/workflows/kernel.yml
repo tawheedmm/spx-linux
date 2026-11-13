@@ -226,8 +226,6 @@ jobs:
     environment: apt-publish
     permissions:
       contents: write     # create the Release
-      pages: write        # deploy Pages
-      id-token: write     # required by deploy-pages
     env:
       GH_TOKEN: ${{ github.token }}
       KEEP: 2             # kernel generations kept per suite
@@ -310,4 +308,17 @@ jobs:
         with:
           path: repo
 
-      - uses: actions/deploy-pages@v4
+  deploy-pages:
+    # deploy-pages must run in the github-pages environment; the signing job above runs in apt-publish
+    needs: publish
+    if: ${{ always() && needs.publish.result == 'success' }}
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
