@@ -67,7 +67,7 @@ jobs:
           apt-get install -y -qq --no-install-recommends \
             build-essential bc bison flex libssl-dev libelf-dev dwarves python3 perl kmod cpio \
             rsync zstd xz-utils git ca-certificates curl dpkg-dev debhelper fakeroot \
-            clang libclang-dev lld llvm ccache file
+            clang libclang-dev lld llvm ccache file libdw-dev lsb-release
 
       - uses: actions/checkout@v4
         with:
@@ -148,11 +148,14 @@ jobs:
         env:
           KBUILD_BUILD_USER: spx-ci
           KBUILD_BUILD_HOST: github-actions
+          KDEB_CHANGELOG_DIST: resolute
+          DEBEMAIL: spx-ci@users.noreply.github.com
+          DEBFULLNAME: spx-linux CI
         run: |
           export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
           # GRUB on arm64 can't load Image.gz: package the raw EFI-stub Image as /boot/vmlinuz-*
           make -j"$(nproc)" CC="ccache gcc" KBUILD_IMAGE=arch/arm64/boot/Image \
-            KDEB_PKGVERSION="$KDEB" bindeb-pkg
+            KDEB_PKGVERSION="$KDEB" DPKG_FLAGS=-d bindeb-pkg   # -d: deps are installed above; gcc-aarch64-linux-gnu is the native gcc here
           ls -la ../*.deb
 
       - name: Verify packages
