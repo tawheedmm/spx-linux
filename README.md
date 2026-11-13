@@ -17,7 +17,7 @@ isn't a distribution and doesn't compete with [linux-surface](https://github.com
 | Area | State |
 |---|---|
 | Boot from internal NVMe next to Windows (standalone GRUB on the ESP) | ✅ |
-| Display 2880x1920 + backlight | ✅ (panel-edp entry under review upstream) |
+| Display 2880x1920 + backlight | ✅ (panel-edp entry merged upstream in drm-misc-next, not in a release yet) |
 | GPU: OpenGL 4.6, Vulkan 1.3 (freedreno / Turnip) | ✅ |
 | NVMe, Type Cover, battery, lid, CPU frequency scaling | ✅ |
 | Wi-Fi, Bluetooth | ✅ |
@@ -26,7 +26,9 @@ isn't a distribution and doesn't compete with [linux-surface](https://github.com
 | Speakers and microphones | ✅ locally. Not in this repo yet (licensing of the audio files is being sorted out) |
 | Android apps (Waydroid) | ✅ (needs the Rust binder in the kernel) |
 | Suspend | ❌ |
-| Cameras | ❌ (in progress) |
+| Front camera (OV5693, 5 MP) | ✅ locally: works in GNOME Camera through libcamera's software ISP, full-size mode only. Needs out-of-tree camera (CAMSS) patches that are not in this repo yet |
+| Infrared camera (OV7251) + IR emitter | ✅ locally: raw capture and face unlock (Howdy). Same out-of-tree patches |
+| Rear camera (OV13858, 13 MP) | ❌ not brought up yet |
 | Pen | ❓ untested |
 
 Status report with details: [linux-surface/surface-pro-x#55](https://github.com/linux-surface/surface-pro-x/issues/55).
