@@ -230,6 +230,11 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       KEEP: 2             # kernel generations kept per suite
     steps:
+      - uses: actions/checkout@v4      # for packaging/RELEASE-WARNING.md
+        with:
+          path: proj
+          sparse-checkout: packaging
+
       - uses: actions/download-artifact@v4
         if: ${{ inputs.publish }}
         with:
@@ -240,10 +245,11 @@ jobs:
         if: ${{ inputs.publish }}
         run: |
           tag="kernel-${{ needs.build.outputs.krel }}"
+          { cat proj/packaging/RELEASE-WARNING.md; echo
+            echo "Kernel ${{ needs.build.outputs.krel }} for the Surface Pro X SQ1. Base: $BASE_REPO @ $BASE_REF. Corresponding source and .config attached. Pre-release = 'testing' suite; the maintainer promotes tested builds to 'stable' by clearing the pre-release flag."
+          } > notes.md
           gh release create "$tag" --repo "$GITHUB_REPOSITORY" --prerelease \
-            --title "$tag" \
-            --notes "Kernel ${{ needs.build.outputs.krel }} for the Surface Pro X SQ1. Base: $BASE_REPO @ $BASE_REF. Corresponding source and .config attached. Pre-release = 'testing' suite; the maintainer promotes tested builds to 'stable' by clearing the pre-release flag." \
-            out/*
+            --title "$tag" --notes-file notes.md out/*
 
       - name: Import signing key
         env:
@@ -288,9 +294,14 @@ jobs:
           done
           gpg --export "$KEYID" > repo/spx-archive-keyring.gpg
           fpr=$(gpg --with-colons --fingerprint "$KEYID" | awk -F: '/^fpr/{print $10; exit}')
+          # warning box from packaging/RELEASE-WARNING.md (escape HTML, then **bold** and `code`)
+          WARN=$(sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \
+                     -e 's/\*\*\([^*]*\)\*\*/<b>\1<\/b>/g' -e 's/`\([^`]*\)`/<code>\1<\/code>/g' \
+                     proj/packaging/RELEASE-WARNING.md)
           cat > repo/index.html <<EOF
           <!doctype html><meta charset="utf-8"><title>spx-linux apt repository</title>
           <h1>Surface Pro X (SQ1) apt repository</h1>
+          <div style="border:2px solid #c60;background:#fff6ec;padding:0.8em 1em;white-space:pre-wrap;max-width:60em">$WARN</div>
           <p>Unofficial, interim packages. Signing key fingerprint: <code>$fpr</code></p>
           <pre>sudo curl -fsSLo /usr/share/keyrings/spx-archive-keyring.gpg https://tawheedmm.github.io/spx-linux/spx-archive-keyring.gpg
           # verify: gpg --show-keys /usr/share/keyrings/spx-archive-keyring.gpg  (must match the fingerprint above)

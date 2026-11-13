@@ -39,3 +39,4 @@ packaging/workflows/kernel.yml
 packaging/public-allowlist.txt
 packaging/export-public.sh
 packaging/make-apt-signing-key.sh
+packaging/RELEASE-WARNING.md
