@@ -94,9 +94,11 @@ jobs:
         working-directory: linux
         run: |
           # Committer is a neutral CI identity; authors and Signed-off-by lines stay as in the patches.
-          git -c user.name="spx-ci" -c user.email="ci@invalid" am --3way \
-            ../proj/kernel-patches/spi-hid-v7/*.patch \
-            ../proj/kernel-patches/audio-wip/*.patch
+          # audio-wip is optional: it is held out of the public repo until its credit is settled
+          shopt -s nullglob
+          P=(../proj/kernel-patches/spi-hid-v7/*.patch ../proj/kernel-patches/audio-wip/*.patch)
+          echo "applying ${#P[@]} patches"
+          git -c user.name="spx-ci" -c user.email="ci@invalid" am --3way "${P[@]}"
           git log --oneline "$BASE_REF"..HEAD
 
       - name: Configure
