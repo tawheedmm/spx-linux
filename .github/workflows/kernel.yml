@@ -129,7 +129,7 @@ jobs:
         working-directory: linux
         run: |
           echo "-spx${GITHUB_RUN_NUMBER}" > localversion-spx
-          KREL=$(make -s kernelrelease)
+          KREL=$(make -s LOCALVERSION= kernelrelease)   # LOCALVERSION= stops setlocalversion adding "+"
           # deb version: "7.4.0-rc2" -> "7.4.0~rc2" so rc sorts before the final release
           KDEB=$(make -s kernelversion | sed 's/-/~/')-spx${GITHUB_RUN_NUMBER}
           echo "krel=$KREL" >> "$GITHUB_OUTPUT"
@@ -155,7 +155,7 @@ jobs:
           export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
           # GRUB on arm64 can't load Image.gz: package the raw EFI-stub Image as /boot/vmlinuz-*
           make -j"$(nproc)" CC="ccache gcc" KBUILD_IMAGE=arch/arm64/boot/Image \
-            KDEB_PKGVERSION="$KDEB" DPKG_FLAGS=-d bindeb-pkg   # -d: deps are installed above; gcc-aarch64-linux-gnu is the native gcc here
+            KDEB_PKGVERSION="$KDEB" LOCALVERSION= DPKG_FLAGS=-d bindeb-pkg   # -d: deps are installed above; gcc-aarch64-linux-gnu is the native gcc here
           ls -la ../*.deb
 
       - name: Verify packages
@@ -172,6 +172,8 @@ jobs:
             find x/lib/modules -name "${m//-/[-_]}.ko*" | grep -q . || echo "::warning::module $m not found (built-in or missing?)"
           done
           rm -f linux-image-*-dbg_*.deb
+          # never ship linux-libc-dev: it would replace Ubuntu's userspace kernel headers
+          rm -f linux-libc-dev_*.deb
 
       - name: Metapackages (linux-image-spx, linux-headers-spx)
         run: |

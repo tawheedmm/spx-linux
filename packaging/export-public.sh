@@ -50,7 +50,9 @@ mv "$DEST/packaging/workflows/kernel.yml" "$DEST/.github/workflows/kernel.yml"
 rmdir "$DEST/packaging/workflows"
 
 # scrub: derive paths from the script location / environment instead of the owner's machine
-sed -i -e 's|^PROJ=/mnt/c/Users/[^ ]*$|PROJ=${PROJ:-$(cd "$(dirname "$0")/.." \&\& pwd)}|' \
+# any PROJ= line that mentions the owner's Windows path (plain or ${PROJ:-...} form)
+sed -i -e '\|^PROJ=.*/mnt/c/Users/|c\
+PROJ=${PROJ:-$(cd "$(dirname "$0")/.." \&\& pwd)}' \
        -e 's|^# Usage (from Windows): wsl .*$|# Usage: SRC=<kernel tree> OUT=<staging dir> scripts/build-kernel.sh|' \
        "$DEST/scripts/build-kernel.sh"
 sed -i -e 's|^SRC=/home/builder/src/iptsd$|SRC=${SRC:-$HOME/src/iptsd}|' \
