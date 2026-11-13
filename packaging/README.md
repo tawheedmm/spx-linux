@@ -56,7 +56,8 @@ packaging/
 |---|---|
 | `APT_SIGNING_KEY` | ASCII-armoured private **signing subkey** only (`gpg --export-secret-subkeys --armor <fpr>!`) |
 | `APT_SIGNING_KEY_ID` | its fingerprint |
-| environment `apt-publish` | required reviewer: the owner. Protects the two secrets above |
+| `APT_SIGNING_PASSPHRASE` | passphrase of that subkey (the primary key stays offline with the owner) |
+| environment `apt-publish` | required reviewer: the owner. Protects the three secrets above |
 | Pages | source = "GitHub Actions" |
 
 ### Testing it locally before any push

@@ -246,6 +246,7 @@ jobs:
       - name: Rebuild apt repo from Releases (stateless)
         env:
           KEYID: ${{ secrets.APT_SIGNING_KEY_ID }}
+          PASS: ${{ secrets.APT_SIGNING_PASSPHRASE }}
         run: |
           set -euo pipefail
           mkdir -p repo/pool
@@ -272,8 +273,8 @@ jobs:
                 -o APT::FTPArchive::Release::Components=main \
                 release "dists/$suite" > "dists/$suite/Release.tmp"
               mv "dists/$suite/Release.tmp" "dists/$suite/Release"
-              gpg --batch --yes --local-user "$KEYID" --clearsign -o "dists/$suite/InRelease" "dists/$suite/Release"
-              gpg --batch --yes --local-user "$KEYID" -abs -o "dists/$suite/Release.gpg" "dists/$suite/Release" )
+              gpg --batch --yes --pinentry-mode loopback --passphrase "$PASS" --local-user "$KEYID" --clearsign -o "dists/$suite/InRelease" "dists/$suite/Release"
+              gpg --batch --yes --pinentry-mode loopback --passphrase "$PASS" --local-user "$KEYID" -abs -o "dists/$suite/Release.gpg" "dists/$suite/Release" )
           done
           gpg --export "$KEYID" > repo/spx-archive-keyring.gpg
           fpr=$(gpg --with-colons --fingerprint "$KEYID" | awk -F: '/^fpr/{print $10; exit}')
@@ -281,10 +282,10 @@ jobs:
           <!doctype html><meta charset="utf-8"><title>spx-linux apt repository</title>
           <h1>Surface Pro X (SQ1) apt repository</h1>
           <p>Unofficial, interim packages. Signing key fingerprint: <code>$fpr</code></p>
-          <pre>sudo curl -fsSLo /usr/share/keyrings/spx-archive-keyring.gpg https://OWNER.github.io/REPO/spx-archive-keyring.gpg
+          <pre>sudo curl -fsSLo /usr/share/keyrings/spx-archive-keyring.gpg https://tawheedmm.github.io/spx-linux/spx-archive-keyring.gpg
           # verify: gpg --show-keys /usr/share/keyrings/spx-archive-keyring.gpg  (must match the fingerprint above)
           echo "Types: deb
-          URIs: https://OWNER.github.io/REPO
+          URIs: https://tawheedmm.github.io/spx-linux
           Suites: stable
           Components: main
           Architectures: arm64
