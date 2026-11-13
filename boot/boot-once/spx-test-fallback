@@ -1,0 +1,10 @@
+#!/bin/sh
+# On test boots (kernel cmdline has spx.test=1): if the router is unreachable 180 s after boot,
+# reboot. The one-shot GRUB entry is already consumed, so the machine comes back on the default.
+for i in $(seq 1 36); do
+  GW=$(ip route 2>/dev/null | awk '/default/{print $3; exit}')
+  [ -n "$GW" ] && ping -c1 -W2 "$GW" >/dev/null 2>&1 && { logger -t spx-test-fallback "network up, staying"; exit 0; }
+  sleep 5
+done
+logger -t spx-test-fallback "no network on test boot after 180 s, rebooting to default entry"
+systemctl reboot

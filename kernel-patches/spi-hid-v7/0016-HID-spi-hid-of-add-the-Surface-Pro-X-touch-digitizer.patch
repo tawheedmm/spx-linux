@@ -1,0 +1,72 @@
+From b145d23634b814fb4a3b85ed16e20a5279b74b9c Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Thu, 12 Nov 2026 11:59:39 -0500
+Subject: [PATCH 16/18] HID: spi-hid-of: add the Surface Pro X touch digitizer
+
+The Surface Pro X digitizer speaks the pre-release HID over SPI protocol
+revision. Both the input report header and body are read from 0x1000
+with opcode 0x0b, and the device descriptor is requested from register 1
+with opcode 0x02; the other registers come from the device descriptor.
+
+Add match data for it, with the same timings as the G6 digitizer, under
+the "microsoft,surface-pro-x-touch-digitizer" compatible and SPI device
+ID.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ drivers/hid/spi-hid/spi-hid-of.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/drivers/hid/spi-hid/spi-hid-of.c b/drivers/hid/spi-hid/spi-hid-of.c
+index 6de9affbe..429bf51ad 100644
+--- a/drivers/hid/spi-hid/spi-hid-of.c
++++ b/drivers/hid/spi-hid/spi-hid-of.c
+@@ -62,6 +62,24 @@ static const struct spi_hid_of_data microsoft_g6_data = {
+ 	.minimal_reset_delay_ms = 100,
+ };
+ 
++/*
++ * The Surface Pro X digitizer implements the pre-release protocol revision.
++ * Input report header and body are both read from 0x1000, and the device
++ * descriptor is requested from register 1.
++ */
++static const struct spi_hid_of_data microsoft_surface_pro_x_data = {
++	.conf = {
++		.input_report_header_address = 0x1000,
++		.input_report_body_address = 0x1000,
++		.output_report_address = 0x1,
++		.read_opcode = 0x0b,
++		.write_opcode = 0x02,
++		.protocol = SPI_HID_PROTOCOL_V2,
++	},
++	.post_power_on_delay_ms = 10,
++	.minimal_reset_delay_ms = 100,
++};
++
+ static int spi_hid_of_populate_config(struct spi_hid_of_config *conf,
+ 				      struct device *dev)
+ {
+@@ -181,12 +199,20 @@ static int spi_hid_of_probe(struct spi_device *spi)
+ 
+ static const struct of_device_id spi_hid_of_match[] = {
+ 	{ .compatible = "microsoft,g6-touch-digitizer", .data = &microsoft_g6_data },
++	{
++		.compatible = "microsoft,surface-pro-x-touch-digitizer",
++		.data = &microsoft_surface_pro_x_data
++	},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, spi_hid_of_match);
+ 
+ static const struct spi_device_id spi_hid_of_id_table[] = {
+ 	{ .name = "g6-touch-digitizer", .driver_data = (kernel_ulong_t)&microsoft_g6_data },
++	{
++		.name = "surface-pro-x-touch-digitizer",
++		.driver_data = (kernel_ulong_t)&microsoft_surface_pro_x_data
++	},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(spi, spi_hid_of_id_table);
+-- 
+2.43.0
+

@@ -1,0 +1,40 @@
+# Files copied into the public spx-linux repo by packaging/export-public.sh.
+# One path or glob per line, relative to this repo.
+# Anything not listed stays private (logs, ACPI dumps, firmware, owner-specific tooling).
+
+# boot / system setup (device-specific, no private data)
+boot/grub-internal.cfg
+boot/touch-watchdog/spx-touch-check
+boot/touch-watchdog/spx-touch-check.service
+boot/boot-once/spx-boot-once
+boot/boot-once/spx-test-fallback
+boot/boot-once/spx-test-fallback.service
+boot/modprobe/00-spx-snd.conf
+boot/spx-waydroid-nft
+boot/99-spx-waydroid-nft
+
+# device trees and kernel patches (GPL-2.0; carry their own Signed-off-by)
+kernel-patches/README.md
+kernel-patches/spi-hid-v7/*.patch
+# kernel-patches/audio-wip/  -> held until ajacocks agrees on credit (linux-surface#21)
+
+# kernel config fragments
+scripts/spx-cambria.config
+scripts/spx-camera.config
+
+# tools
+scripts/extract-firmware.ps1
+scripts/build-kernel.sh
+scripts/build-iptsd.sh
+
+# docs
+docs/workstreams/firmware.md
+docs/workstreams/touch.md
+docs/workstreams/status.md
+# docs/workstreams/audio.md  -> held (audio licence pending; also has local build paths)
+
+# packaging
+packaging/README.md
+packaging/workflows/kernel.yml
+packaging/public-allowlist.txt
+packaging/export-public.sh

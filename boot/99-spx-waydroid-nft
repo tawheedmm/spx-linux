@@ -1,0 +1,2 @@
+// Surface Pro X: keep Waydroid on nftables after package upgrades (owner-approved 2026-11-12).
+DPkg::Post-Invoke { "/usr/local/sbin/spx-waydroid-nft || true"; };

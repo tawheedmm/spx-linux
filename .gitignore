@@ -1,0 +1,18 @@
+# Never commit firmware extracted from Windows, logs, or proprietary files
+firmware/
+*.mbn
+*.elf
+logs/
+**/msdm.*
+**/MSDM.*
+**/*widevine*
+# build output
+*.img
+*.dtb
+*.deb
+*.changes
+*.buildinfo
+Image
+Image.gz
+modules/
+out/

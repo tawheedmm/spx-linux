@@ -1,0 +1,11 @@
+[Unit]
+Description=Surface Pro X: reset the touch digitizer if it missed its boot reset
+After=systemd-udev-settle.service systemd-modules-load.service
+ConditionPathExists=/sys/bus/spi/devices/spi0.0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/spx-touch-check
+
+[Install]
+WantedBy=multi-user.target

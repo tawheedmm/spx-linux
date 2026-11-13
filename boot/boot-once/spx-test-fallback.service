@@ -1,0 +1,11 @@
+[Unit]
+Description=Surface Pro X: reboot to the default entry if a test boot has no network
+ConditionKernelCommandLine=spx.test=1
+After=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/spx-test-fallback
+
+[Install]
+WantedBy=multi-user.target

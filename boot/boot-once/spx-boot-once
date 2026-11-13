@@ -1,0 +1,12 @@
+#!/bin/sh
+# Boot a GRUB menu entry once (by exact title), then fall back to the default.
+# Writes the 1024-byte GRUB environment block that grub.cfg reads and clears.
+set -e
+[ "$(id -u)" = 0 ] || { echo "run as root" >&2; exit 1; }
+E=/boot/efi; G=$E/grub.cfg; T="$1"
+[ -n "$T" ] || { echo "usage: spx-boot-once \"<menu entry title>\"" >&2; grep '^menuentry' $G | sed 's/menuentry "\(.*\)".*/  \1/' >&2; exit 1; }
+grep -qF "menuentry \"$T\"" $G || { echo "no menu entry titled: $T" >&2; exit 1; }
+grep -q 'load_env --file $spx/grubenv' $G || { echo "grub.cfg lacks the grubenv block" >&2; exit 1; }
+{ printf '# GRUB Environment Block\nnext_entry=%s\n' "$T"; yes '#' | tr -d '\n' | head -c 1024; } | head -c 1024 > $E/grubenv.new
+mv -f $E/grubenv.new $E/grubenv; sync
+echo "next boot: $T (once)"

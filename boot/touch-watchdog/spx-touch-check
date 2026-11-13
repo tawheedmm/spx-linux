@@ -1,0 +1,12 @@
+#!/bin/sh
+# Surface Pro X: the SPI digitizer sometimes misses its reset interrupt at boot, so spi-hid binds but
+# never creates the HID device. Wait for it; if absent, unbind/bind the driver (this resets it).
+present() { grep -qs "HID_ID=001C:0000045E:00000996" /sys/bus/spi/devices/spi0.0/*/uevent; }
+for i in $(seq 1 20); do present && exit 0; sleep 1; done
+for try in 1 2 3; do
+  logger -t spx-touch-check "digitizer missing, rebinding spi-hid (try $try)"
+  echo spi0.0 > /sys/bus/spi/drivers/spi_hid_of/unbind 2>/dev/null; sleep 1
+  echo spi0.0 > /sys/bus/spi/drivers/spi_hid_of/bind 2>/dev/null
+  for i in $(seq 1 10); do present && { logger -t spx-touch-check "digitizer up"; exit 0; }; sleep 1; done
+done
+logger -t spx-touch-check "digitizer still missing after 3 rebinds"; exit 1

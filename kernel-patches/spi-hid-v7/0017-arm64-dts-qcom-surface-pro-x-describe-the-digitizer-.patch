@@ -1,0 +1,105 @@
+From c203809866bcfd7cb776443ca753859fed57eff4 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Thu, 12 Nov 2026 11:19:57 -0500
+Subject: [PATCH 17/18] arm64: dts: qcom: surface-pro-x: describe the digitizer
+ for the upstream spi-hid driver
+
+The Surface Pro X digitizer (045E:0996) is a HID over SPI device that
+implements the pre-release protocol revision (input header version 2,
+device descriptor version 0x0100), so describe it with its own
+"microsoft,surface-pro-x-touch-digitizer" compatible from the
+hid-over-spi binding rather than "microsoft,g6-touch-digitizer".
+
+Describe reset (TLMM 54, active low) as reset-gpios and the 5 V rail as
+vdd-supply, and drop the active/sleep/reset pinctrl states that only the
+old out-of-tree driver used.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ .../qcom/sc8180x-microsoft-surface-pro-x.dtsi | 50 ++-----------------
+ 1 file changed, 4 insertions(+), 46 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index e1c5e9f0f..160a53c4d 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -502,22 +502,6 @@ spi1_hid0_reset: spi1-hid1-reset {
+ 		bias-disable;
+ 	};
+ 
+-	spi1_hid0_reset_deassert: spi1-hid1-reset-deassert {
+-		pins = "gpio54";
+-		function = "gpio";
+-		drive-strength = <2>;
+-		bias-disable;
+-		output-high;
+-	};
+-
+-	spi1_hid0_reset_assert: spi1-hid1-reset-assert {
+-		pins = "gpio54";
+-		function = "gpio";
+-		drive-strength = <2>;
+-		bias-disable;
+-		output-low;
+-	};
+-
+ 	spi1_hid0_int_bias: spi1-hid1-int-bias {
+ 		pins = "gpio122";
+ 		function = "gpio";
+@@ -526,14 +510,6 @@ spi1_hid0_int_bias: spi1-hid1-int-bias {
+ 		bias-pull-up;
+ 	};
+ 
+-	spi1_hid0_int_unbias: spi1-hid1-int-unbias {
+-		pins = "gpio122";
+-		function = "gpio";
+-
+-		input-enable;
+-		bias-disable;
+-	};
+-
+ 	uart13_state: uart13-state {
+ 		cts {
+ 			pins = "gpio43";
+@@ -937,34 +913,16 @@ &spi1 {
+ 	status = "okay";
+ 
+ 	hid@0 {
+-		compatible = "hid-over-spi";
+-
++		compatible = "microsoft,surface-pro-x-touch-digitizer";
+ 		reg = <0>;
+ 		spi-max-frequency = <25000000>;
+-		// spi-max-frequency = <12500000>;
+ 
+ 		interrupts-extended = <&tlmm 122 IRQ_TYPE_EDGE_FALLING>;
+-
++		reset-gpios = <&tlmm 54 GPIO_ACTIVE_LOW>;
+ 		vdd-supply = <&vreg_ts_5p0>;
+ 
+-		// OLD DRV
+-		pinctrl-0 = <&spi1_hid0_reset_deassert &spi1_hid0_int_bias>;
+-		pinctrl-1 = <&spi1_hid0_reset_assert &spi1_hid0_int_unbias>;
+-		pinctrl-2 = <&spi1_hid0_reset_assert &spi1_hid0_int_bias>;
+-		pinctrl-names = "active", "sleep", "reset";
+-		hid-descr-addr = <1>;
+-
+-		// NEW DRV
+-		// pinctrl-0 = <&spi1_hid0_reset &spi1_hid0_int_bias>;
+-		// pinctrl-1 = <&spi1_hid0_reset &spi1_hid0_int_unbias>;
+-		// pinctrl-2 = <&spi1_hid0_reset &spi1_hid0_int_bias>;
+-		// reset-gpios = <&tlmm 54 GPIO_ACTIVE_LOW>;
+-		// input-report-header-address = <0x1000>;
+-		// input-report-body-address = <0x1004>;
+-		// output-report-address = <0x2000>;
+-		// read-opcode = <0x0b>;
+-		// write-opcode = <0x02>;
+-		// hid-over-spi-flags = <0x0000>;
++		pinctrl-0 = <&spi1_hid0_reset &spi1_hid0_int_bias>;
++		pinctrl-names = "default";
+ 	};
+ };
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,51 @@
+From b169001061b6f457c0d2c3916f8a113464a74e79 Mon Sep 17 00:00:00 2001
+From: Jarrett Schultz <jaschultz@microsoft.com>
+Date: Sat, 24 Oct 2026 00:51:36 +0000
+Subject: [PATCH 04/18] HID: Add BUS_SPI support and define HID_SPI_DEVICE
+ macro
+
+If connecting a hid_device with bus field indicating BUS_SPI print out
+"SPI" in the debug print.
+
+Macro sets the bus field to BUS_SPI and uses arguments to set vendor
+product fields.
+
+Signed-off-by: Dmitry Antipov <dmanti@microsoft.com>
+Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Tested-by: Dale Whinham <daleyo@gmail.com>
+Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
+---
+ drivers/hid/hid-core.c | 3 +++
+ include/linux/hid.h    | 2 ++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index b4fd482d3..3ee8356a9 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -2373,6 +2373,9 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
+ 	case BUS_I2C:
+ 		bus = "I2C";
+ 		break;
++	case BUS_SPI:
++		bus = "SPI";
++		break;
+ 	case BUS_SDW:
+ 		bus = "SOUNDWIRE";
+ 		break;
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index 8d17b7416..45f713fe9 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -821,6 +821,8 @@ struct hid_descriptor {
+ 	.bus = BUS_BLUETOOTH, .vendor = (ven), .product = (prod)
+ #define HID_I2C_DEVICE(ven, prod)				\
+ 	.bus = BUS_I2C, .vendor = (ven), .product = (prod)
++#define HID_SPI_DEVICE(ven, prod)				\
++	.bus = BUS_SPI, .vendor = (ven), .product = (prod)
+ 
+ #define HID_REPORT_ID(rep) \
+ 	.report_type = (rep)
+-- 
+2.43.0
+

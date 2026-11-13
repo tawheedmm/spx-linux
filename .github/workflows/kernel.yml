@@ -1,0 +1,300 @@
+# Kernel packages for the Surface Pro X SQ1. Design: docs/ROADMAP.md (phase 1).
+#
+# Builds the Surface Pro X (SQ1, sc8180x "cambria") kernel as .deb packages on a free arm64
+# runner, and, only on a manual run approved through the `apt-publish` environment, publishes
+# them as a GitHub Release + signed apt repo on GitHub Pages.
+#
+# Expected repo layout (same as the private working repo, via the export allowlist):
+#   kernel-patches/spi-hid-v7/*.patch, kernel-patches/audio-wip/*.patch,
+#   scripts/spx-cambria.config, scripts/spx-camera.config
+
+name: kernel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - kernel-patches/**
+      - scripts/spx-cambria.config
+      - scripts/spx-camera.config
+      - .github/workflows/kernel.yml
+  pull_request:
+    paths:
+      - kernel-patches/**
+      - scripts/spx-*.config
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish: create a Release (pre-release = testing) and redeploy the apt repo"
+        type: boolean
+        default: false
+      repo_only:
+        description: "Only rebuild/redeploy the apt repo from existing Releases (e.g. after promoting one to stable)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: kernel-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Kernel base: Val Packett's linux-qclaptops, uwu-next, pinned. Bump deliberately, never "latest".
+  BASE_REPO: https://github.com/valpackett/linux-qclaptops.git
+  BASE_REF: 7d84f0635d71596b63e1de8be38936fcf2f7acb4   # uwu-next, 7.4.0-rc2-next-20261109
+  # Rust for Android binder (Waydroid): rustc >= 1.85, bindgen 0.71
+  RUST_VERSION: "1.85.0"
+  BINDGEN_VERSION: "~0.71"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.repo_only) }}
+    runs-on: ubuntu-24.04-arm          # free for public repos; native arm64, no cross toolchain
+    container: ubuntu:26.04            # same userspace as the target, for linux-headers host tools
+    timeout-minutes: 350
+    permissions:
+      contents: read
+    outputs:
+      krel: ${{ steps.ver.outputs.krel }}
+    steps:
+      - name: Install build dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends \
+            build-essential bc bison flex libssl-dev libelf-dev dwarves python3 perl kmod cpio \
+            rsync zstd xz-utils git ca-certificates curl dpkg-dev debhelper fakeroot \
+            clang libclang-dev lld llvm ccache file
+
+      - uses: actions/checkout@v4
+        with:
+          path: proj
+
+      - name: Install Rust toolchain + bindgen
+        run: |
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal \
+            --default-toolchain "$RUST_VERSION" --component rust-src
+          . "$HOME/.cargo/env"
+          cargo install --locked bindgen-cli --version "$BINDGEN_VERSION"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          rustc --version; bindgen --version
+
+      - name: Fetch kernel base (pinned commit)
+        run: |
+          git init -q linux
+          git -C linux remote add origin "$BASE_REPO"
+          git -C linux fetch -q --depth 1 origin "$BASE_REF"
+          git -C linux checkout -q FETCH_HEAD
+          git -C linux log -1 --format='base: %H %s'
+
+      - name: Apply our patches
+        working-directory: linux
+        run: |
+          # Committer is a neutral CI identity; authors and Signed-off-by lines stay as in the patches.
+          git -c user.name="spx-ci" -c user.email="ci@invalid" am --3way \
+            ../proj/kernel-patches/spi-hid-v7/*.patch \
+            ../proj/kernel-patches/audio-wip/*.patch
+          git log --oneline "$BASE_REF"..HEAD
+
+      - name: Configure
+        working-directory: linux
+        run: |
+          F="../proj/scripts/spx-cambria.config ../proj/scripts/spx-camera.config"
+          scripts/kconfig/merge_config.sh -m arch/arm64/configs/defconfig $F >/dev/null
+          # no -dbg package (~1 GB), stable release string per CI run
+          scripts/config -d DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT -d DEBUG_INFO_DWARF4 -d DEBUG_INFO_DWARF5 \
+                         -e DEBUG_INFO_NONE -d LOCALVERSION_AUTO
+          make -s olddefconfig
+          echo "== fragment options not applied"
+          bad=0
+          for line in $(cat $F | grep -E '^CONFIG_[A-Z0-9_]+='); do
+            grep -qx "$line" .config || { echo "  $line (now: $(grep -E "^${line%%=*}=|# ${line%%=*} is not set" .config || echo absent))"; bad=1; }
+          done
+          [ "$bad" = 0 ] || { echo "::error::config fragment options were dropped"; exit 1; }
+
+      - name: Check Rust
+        working-directory: linux
+        run: |
+          make -s rustavailable
+          grep -qx 'CONFIG_RUST=y' .config || { echo "::error::CONFIG_RUST is not set: Rust binder (Waydroid) would be missing. Add CONFIG_RUST=y (and the Rust binder symbol) to spx-cambria.config"; exit 1; }
+          grep -E '^CONFIG_ANDROID_BINDER' .config
+
+      - name: Version strings
+        id: ver
+        working-directory: linux
+        run: |
+          echo "-spx${GITHUB_RUN_NUMBER}" > localversion-spx
+          KREL=$(make -s kernelrelease)
+          # deb version: "7.4.0-rc2" -> "7.4.0~rc2" so rc sorts before the final release
+          KDEB=$(make -s kernelversion | sed 's/-/~/')-spx${GITHUB_RUN_NUMBER}
+          echo "krel=$KREL" >> "$GITHUB_OUTPUT"
+          echo "KREL=$KREL" >> "$GITHUB_ENV"
+          echo "KDEB=$KDEB" >> "$GITHUB_ENV"
+          echo "kernelrelease=$KREL  deb=$KDEB"
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache          # relative: github.workspace is the host path inside container jobs
+          key: ccache-${{ env.BASE_REF }}-${{ github.run_id }}
+          restore-keys: ccache-${{ env.BASE_REF }}-
+
+      - name: Build .debs (uncompressed Image for GRUB)
+        working-directory: linux
+        env:
+          KBUILD_BUILD_USER: spx-ci
+          KBUILD_BUILD_HOST: github-actions
+        run: |
+          export CCACHE_DIR="$GITHUB_WORKSPACE/.ccache"
+          # GRUB on arm64 can't load Image.gz: package the raw EFI-stub Image as /boot/vmlinuz-*
+          make -j"$(nproc)" CC="ccache gcc" KBUILD_IMAGE=arch/arm64/boot/Image \
+            KDEB_PKGVERSION="$KDEB" bindeb-pkg
+          ls -la ../*.deb
+
+      - name: Verify packages
+        run: |
+          set -e
+          img=$(ls linux-image-"$KREL"_*.deb | grep -v -- -dbg)
+          rm -rf x && mkdir x && dpkg-deb -x "$img" x
+          magic=$(head -c2 x/boot/vmlinuz-"$KREL")
+          [ "$magic" = "MZ" ] || { echo "::error::vmlinuz is not an uncompressed EFI-stub Image ($(file -b x/boot/vmlinuz-$KREL)). Fallback: decompress the kernel in the boot hook"; exit 1; }
+          dtb=$(find x -name 'sc8180x-microsoft-cambria*.dtb' | head -5)
+          [ -n "$dtb" ] || { echo "::error::cambria DTB missing from linux-image"; exit 1; }
+          echo "$dtb"
+          for m in snd-soc-sdm845 spi-hid qcom_q6v5_pas; do
+            find x/lib/modules -name "${m//-/[-_]}.ko*" | grep -q . || echo "::warning::module $m not found (built-in or missing?)"
+          done
+          rm -f linux-image-*-dbg_*.deb
+
+      - name: Metapackages (linux-image-spx, linux-headers-spx)
+        run: |
+          META_VER="0.${GITHUB_RUN_NUMBER}"
+          for kind in image headers; do
+            d=meta-$kind; mkdir -p $d/DEBIAN
+            cat > $d/DEBIAN/control <<EOF
+          Package: linux-$kind-spx
+          Version: $META_VER
+          Architecture: arm64
+          Maintainer: spx-linux <noreply@example.invalid>
+          Depends: linux-$kind-$KREL
+          Section: kernel
+          Priority: optional
+          Description: Surface Pro X (SQ1) kernel, latest ($kind)
+           Depends on the newest linux-$kind built for the Surface Pro X SQ1
+           (Val Packett's uwu-next + spx patches). Install this to get kernel
+           updates through apt upgrade.
+          EOF
+            dpkg-deb --root-owner-group -b $d "linux-$kind-spx_${META_VER}_arm64.deb"
+          done
+
+      - name: Source + config (GPL corresponding source)
+        run: |
+          cp linux/.config "config-$KREL"
+          git -C linux archive --prefix="linux-$KREL/" HEAD | xz -T0 -6 > "linux-$KREL-source.tar.xz"
+          sha256sum *.deb "config-$KREL" "linux-$KREL-source.tar.xz" > SHA256SUMS
+          cat SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-${{ steps.ver.outputs.krel }}
+          path: |
+            *.deb
+            config-*
+            linux-*-source.tar.xz
+            SHA256SUMS
+          retention-days: 14
+
+  publish:
+    # Manual only, and the environment requires the owner's approval before secrets are exposed.
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.publish || inputs.repo_only) && always() && needs.build.result != 'failure' }}
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: apt-publish
+    permissions:
+      contents: write     # create the Release
+      pages: write        # deploy Pages
+      id-token: write     # required by deploy-pages
+    env:
+      GH_TOKEN: ${{ github.token }}
+      KEEP: 2             # kernel generations kept per suite
+    steps:
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.publish }}
+        with:
+          name: kernel-${{ needs.build.outputs.krel }}
+          path: out
+
+      - name: Create GitHub Release (pre-release = testing only)
+        if: ${{ inputs.publish }}
+        run: |
+          tag="kernel-${{ needs.build.outputs.krel }}"
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --prerelease \
+            --title "$tag" \
+            --notes "Kernel ${{ needs.build.outputs.krel }} for the Surface Pro X SQ1. Base: $BASE_REPO @ $BASE_REF. Corresponding source and .config attached. Pre-release = 'testing' suite; the maintainer promotes tested builds to 'stable' by clearing the pre-release flag." \
+            out/*
+
+      - name: Import signing key
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          sudo apt-get install -y -qq apt-utils gnupg >/dev/null
+          echo "$APT_SIGNING_KEY" | gpg --batch --quiet --import
+          gpg --list-secret-keys --keyid-format long
+
+      - name: Rebuild apt repo from Releases (stateless)
+        env:
+          KEYID: ${{ secrets.APT_SIGNING_KEY_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p repo/pool
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 50 \
+            --json tagName,isPrerelease,createdAt > releases.json
+          # One shared pool (pool/<tag>/): a build that is in both suites is stored once (Pages: 1 GB max).
+          # Older metapackages can stay; apt picks the highest version.
+          for suite in testing stable; do
+            if [ $suite = stable ]; then sel='map(select(.isPrerelease==false))'; else sel='.'; fi
+            tags=$(jq -r "$sel | map(select(.tagName|startswith(\"kernel-\"))) | sort_by(.createdAt) | reverse | .[:$KEEP] | .[].tagName" releases.json)
+            d="repo/dists/$suite/main/binary-arm64"; mkdir -p "$d"; : > "$d/Packages"
+            for t in $tags; do
+              [ -d "repo/pool/$t" ] || gh release download "$t" --repo "$GITHUB_REPOSITORY" -p '*.deb' -D "repo/pool/$t"
+              ( cd repo && apt-ftparchive packages "pool/$t" ) >> "$d/Packages"
+            done
+            gzip -9kf "$d/Packages"
+            ( cd repo
+              apt-ftparchive \
+                -o APT::FTPArchive::Release::Origin=spx-linux \
+                -o APT::FTPArchive::Release::Label=spx-linux \
+                -o APT::FTPArchive::Release::Suite=$suite \
+                -o APT::FTPArchive::Release::Codename=$suite \
+                -o APT::FTPArchive::Release::Architectures=arm64 \
+                -o APT::FTPArchive::Release::Components=main \
+                release "dists/$suite" > "dists/$suite/Release.tmp"
+              mv "dists/$suite/Release.tmp" "dists/$suite/Release"
+              gpg --batch --yes --local-user "$KEYID" --clearsign -o "dists/$suite/InRelease" "dists/$suite/Release"
+              gpg --batch --yes --local-user "$KEYID" -abs -o "dists/$suite/Release.gpg" "dists/$suite/Release" )
+          done
+          gpg --export "$KEYID" > repo/spx-archive-keyring.gpg
+          fpr=$(gpg --with-colons --fingerprint "$KEYID" | awk -F: '/^fpr/{print $10; exit}')
+          cat > repo/index.html <<EOF
+          <!doctype html><meta charset="utf-8"><title>spx-linux apt repository</title>
+          <h1>Surface Pro X (SQ1) apt repository</h1>
+          <p>Unofficial, interim packages. Signing key fingerprint: <code>$fpr</code></p>
+          <pre>sudo curl -fsSLo /usr/share/keyrings/spx-archive-keyring.gpg https://OWNER.github.io/REPO/spx-archive-keyring.gpg
+          # verify: gpg --show-keys /usr/share/keyrings/spx-archive-keyring.gpg  (must match the fingerprint above)
+          echo "Types: deb
+          URIs: https://OWNER.github.io/REPO
+          Suites: stable
+          Components: main
+          Architectures: arm64
+          Signed-By: /usr/share/keyrings/spx-archive-keyring.gpg" | sudo tee /etc/apt/sources.list.d/spx.sources
+          sudo apt update && sudo apt install linux-image-spx</pre>
+          EOF
+          du -sh repo; find repo -maxdepth 3 -type d
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: repo
+
+      - uses: actions/deploy-pages@v4

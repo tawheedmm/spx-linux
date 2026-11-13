@@ -1,0 +1,122 @@
+From b8f2357180550e53e0cdfb9e4f83977ed6701aee Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Thu, 12 Nov 2026 10:53:14 -0500
+Subject: [PATCH 01/18] arm64: dts: qcom: surface-pro-x: enable QUP0/QUP2, add
+ lid switch and NVMe 3.3V enable
+
+QUP wrapper 0 hosts spi1 (touch) and i2c2 (ALS); wrapper 2 hosts uart13
+(BT) and uart15 (SAM). Only wrapper 1 was enabled, so none could probe.
+Lid on tlmm 121 and the NVMe load switch on pmc8180c gpio11 come from the
+cambria DSDT (LIDR field / PEP PCI2 D0 sequence).
+
+Tested on Surface Pro X SQ1 LTE (cambria, SKU 1876, UEFI 4.234.140):
+SAM, Bluetooth and the spi-hid digitizer probe; lid registers; NVMe
+links at PCIe Gen3 x2.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ .../qcom/sc8180x-microsoft-surface-pro-x.dtsi | 56 +++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index 24312b96c..e1c5e9f0f 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -8,6 +8,7 @@
+ /dts-v1/;
+ 
+ #include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/gpio-keys.h>
+ #include <dt-bindings/input/linux-event-codes.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+@@ -57,6 +58,40 @@ volume-up {
+ 		};
+ 	};
+ 
++	gpio-keys-lid {
++		compatible = "gpio-keys";
++		label = "Lid";
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&lid_default>;
++
++		switch-lid {
++			label = "Lid";
++			gpios = <&tlmm 121 GPIO_ACTIVE_LOW>;
++			linux,input-type = <EV_SW>;
++			linux,code = <SW_LID>;
++			wakeup-source;
++			wakeup-event-action = <EV_ACT_DEASSERTED>;
++		};
++	};
++
++	vreg_nvme_3p3: regulator-nvme {
++		compatible = "regulator-fixed";
++		regulator-name = "vreg_nvme_3p3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++
++		gpio = <&pmc8180c_gpios 11 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&nvme_en_default>;
++
++		/* TODO: wire to pcie2_port0 vpcie3v3-supply once D3cold is tested */
++		regulator-always-on;
++		regulator-boot-on;
++	};
++
+ 	chosen {
+ 	};
+ 
+@@ -422,6 +457,13 @@ &smb2351_a {
+ &tlmm {
+ 	gpio-reserved-ranges = <0 4>, <47 4>;
+ 
++	lid_default: lid-default-state {
++		pins = "gpio121";
++		function = "gpio";
++		bias-disable;
++		input-enable;
++	};
++
+ 	pcie1_default_state: pcie1-default-state {
+ 		clkreq-n-pins {
+ 			pins = "gpio176";
+@@ -644,6 +686,12 @@ bl_pwm_default_state: bl-pwm-default-state {
+ 		pins = "gpio10";
+ 		function = "func1";
+ 	};
++
++	nvme_en_default: nvme-en-state {
++		pins = "gpio11";
++		function = "normal";
++		output-high;
++	};
+ };
+ 
+ &pmc8180c_lpg {
+@@ -854,10 +902,18 @@ &pcie2_port0 {
+ 	wake-gpios = <&tlmm 104 GPIO_ACTIVE_LOW>;
+ };
+ 
++&qupv3_id_0 {
++	status = "okay";
++};
++
+ &qupv3_id_1 {
+ 	status = "okay";
+ };
+ 
++&qupv3_id_2 {
++	status = "okay";
++};
++
+ &remoteproc_adsp {
+ 	memory-region = <&adsp_mem>;
+ };
+-- 
+2.43.0
+

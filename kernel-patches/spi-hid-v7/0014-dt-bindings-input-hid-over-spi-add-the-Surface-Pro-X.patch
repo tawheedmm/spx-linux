@@ -1,0 +1,36 @@
+From 31524f3a75570ba5cd2d0902a33739f238b44fc2 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Thu, 12 Nov 2026 11:59:38 -0500
+Subject: [PATCH 14/18] dt-bindings: input: hid-over-spi: add the Surface Pro X
+ touch digitizer
+
+The touch and pen digitizer of the Microsoft Surface Pro X (vendor 0x045e,
+product 0x0996) is a HID over SPI device, but its firmware implements a
+pre-release revision of the protocol (input header version 2, device
+descriptor bcdVersion 0x0100) rather than HID over SPI 1.0, so the driver
+cannot treat it as a "microsoft,g6-touch-digitizer".
+
+Microsoft does not publish a part number or generation for this
+digitizer, so name it after the product it ships in, like the
+"microsoft,surface-sam" embedded controller.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ Documentation/devicetree/bindings/input/hid-over-spi.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/input/hid-over-spi.yaml b/Documentation/devicetree/bindings/input/hid-over-spi.yaml
+index bed0746f0..beb7e0922 100644
+--- a/Documentation/devicetree/bindings/input/hid-over-spi.yaml
++++ b/Documentation/devicetree/bindings/input/hid-over-spi.yaml
+@@ -27,6 +27,7 @@ properties:
+   compatible:
+     enum:
+       - microsoft,g6-touch-digitizer
++      - microsoft,surface-pro-x-touch-digitizer
+ 
+   reg:
+     maxItems: 1
+-- 
+2.43.0
+
