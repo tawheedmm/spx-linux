@@ -10,9 +10,8 @@ ST=$(mktemp -d); chmod 755 "$ST"; trap 'rm -rf "$ST"' EXIT
 mkdir -p "$OUT"
 
 # refuse to package a key whose fingerprint doesn't match
-G=$(mktemp -d); GNUPGHOME=$G gpg -q --import "$HERE/spx-archive-keyring.gpg" 2>/dev/null
-got=$(GNUPGHOME=$G gpg --with-colons --fingerprint | awk -F: '/^fpr/{print $10; exit}')
-GNUPGHOME=$G gpgconf --kill gpg-agent 2>/dev/null || true; rm -rf "$G"
+# (gpg --show-keys reads the file directly: no keyring, no agent, no early-exiting pipe)
+got=$(gpg --batch --show-keys --with-colons "$HERE/spx-archive-keyring.gpg" 2>/dev/null | awk -F: '$1=="fpr" && !n {print $10; n=1}')
 [ "$got" = "$FPR" ] || { echo "key fingerprint $got != $FPR"; exit 1; }
 
 install -D -m644 "$HERE/spx-archive-keyring.gpg" "$ST/usr/share/keyrings/spx-archive-keyring.gpg"
