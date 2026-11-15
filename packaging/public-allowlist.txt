@@ -67,3 +67,4 @@ packaging/spx-firmware-extract/spx-extract-firmware
 packaging/spx-firmware-extract/firmware-map.tsv
 packaging/spx-firmware-extract/build-deb.sh
 packaging/spx-firmware-extract/test-extract.sh
+packaging/spx-archive-keyring/spx-archive-keyring.asc

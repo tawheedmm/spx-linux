@@ -11,10 +11,12 @@ mkdir -p "$OUT"
 
 # refuse to package a key whose fingerprint doesn't match
 # (gpg --show-keys reads the file directly: no keyring, no agent, no early-exiting pipe)
-got=$(gpg --batch --show-keys --with-colons "$HERE/spx-archive-keyring.gpg" 2>/dev/null | awk -F: '$1=="fpr" && !n {print $10; n=1}')
+got=$(gpg --batch --show-keys --with-colons "$HERE/spx-archive-keyring.asc" 2>/dev/null | awk -F: '$1=="fpr" && !n {print $10; n=1}')
 [ "$got" = "$FPR" ] || { echo "key fingerprint $got != $FPR"; exit 1; }
 
-install -D -m644 "$HERE/spx-archive-keyring.gpg" "$ST/usr/share/keyrings/spx-archive-keyring.gpg"
+install -d "$ST/usr/share/keyrings"
+gpg --batch --yes --dearmor -o "$ST/usr/share/keyrings/spx-archive-keyring.gpg" "$HERE/spx-archive-keyring.asc"   # binary keyring for Signed-By
+chmod 644 "$ST/usr/share/keyrings/spx-archive-keyring.gpg"
 install -d "$ST/etc/apt/sources.list.d" "$ST/usr/share/doc/spx-archive-keyring"
 cat > "$ST/etc/apt/sources.list.d/spx-linux.sources" <<EOF
 # spx-linux: packages for Linux on the Microsoft Surface Pro X (SQ1)
