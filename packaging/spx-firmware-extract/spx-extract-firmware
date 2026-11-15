@@ -1,0 +1,122 @@
+#!/bin/bash
+# spx-extract-firmware: copy the Surface Pro X (SQ1) firmware Linux needs from YOUR OWN Windows
+# installation. The files are signed for this device family and may not be redistributed, so
+# every owner extracts them from their own machine. Nothing is written to the Windows partition.
+#
+#   sudo spx-extract-firmware                 find the Windows partition, mount it read-only, extract
+#   sudo spx-extract-firmware --from DIR      DIR = a mounted Windows (C:) root, or a folder written
+#                                             by extract-firmware.ps1 in Windows (BitLocker case)
+#   options: --dry-run   show what would be copied
+#            --model M   cambria (SQ1 LTE), caspar (SQ1 no modem), carina (SQ2); default: from the DT
+#            --dest DIR  firmware root (default /lib/firmware); files go to DIR/updates/
+#
+# Files go to /lib/firmware/updates/, which the kernel searches before /lib/firmware, so they never
+# collide with files owned by Ubuntu's linux-firmware packages. A manifest with SHA-256 sums is
+# written to /var/lib/spx-firmware-extract/manifest.tsv.
+set -euo pipefail
+VERSION=0.1
+MAP=${SPX_FW_MAP:-/usr/share/spx-firmware-extract/firmware-map.tsv}
+[ -f "$MAP" ] || MAP=$(dirname "$0")/firmware-map.tsv
+STATE=${SPX_FW_STATE:-/var/lib/spx-firmware-extract}
+DEST=/lib/firmware; FROM=""; DRY=0; MODEL=""
+log() { echo "spx-extract-firmware: $*" >&2; }
+die() { log "error: $*"; exit 1; }
+while [ $# -gt 0 ]; do case $1 in
+  --from) FROM=$2; shift 2;; --dest) DEST=$2; shift 2;; --model) MODEL=$2; shift 2;;
+  --dry-run) DRY=1; shift;; -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
+  *) die "unknown option $1";; esac; done
+
+if [ -z "$MODEL" ]; then
+  case "$(tr '\0' '\n' < "${SPX_DT:-/proc/device-tree}/compatible" 2>/dev/null)" in
+    *microsoft,cambria*) MODEL=cambria ;; *microsoft,caspar*) MODEL=caspar ;; *microsoft,carina*) MODEL=carina ;;
+    *) die "not a Surface Pro X (device-tree compatible unknown); pass --model cambria|caspar|carina" ;;
+  esac
+fi
+case $MODEL in cambria|caspar|carina) ;; *) die "unknown model $MODEL";; esac
+B=qcom/sc8180x/microsoft/$MODEL
+[ $DRY = 1 ] || [ -w "$DEST" ] || [ "$(id -u)" = 0 ] || die "run as root (sudo spx-extract-firmware)"
+
+# ---------- find the source ----------
+MNT=""
+cleanup() {  # must return 0: its status would otherwise become the script's exit status
+  if [ -n "$MNT" ]; then umount "$MNT" 2>/dev/null || fusermount -u "$MNT" 2>/dev/null || true; rmdir "$MNT" 2>/dev/null || true; fi
+  return 0
+}
+trap cleanup EXIT
+
+repo_of() { # FileRepository directory under a Windows root, any capitalisation
+  local d; d=$(find "$1" -maxdepth 4 -ipath "$1/windows/system32/driverstore/filerepository" -type d 2>/dev/null | head -1)
+  echo "$d"
+}
+
+if [ -z "$FROM" ]; then
+  command -v lsblk >/dev/null || die "lsblk missing"
+  if lsblk -rno FSTYPE | grep -qx BitLocker; then
+    log "found a BitLocker-encrypted partition. Linux can't read it without your recovery key."
+  fi
+  for dev in $(lsblk -rpno NAME,FSTYPE | awk '$2=="ntfs"{print $1}'); do
+    MNT=$(mktemp -d /run/spx-fw.XXXXXX)
+    if ntfs-3g -o ro "$dev" "$MNT" 2>/dev/null; then
+      if [ -n "$(repo_of "$MNT")" ]; then FROM=$MNT; log "using Windows on $dev (mounted read-only)"; break; fi
+      umount "$MNT" 2>/dev/null || fusermount -u "$MNT" || true
+    fi
+    rmdir "$MNT"; MNT=""
+  done
+  [ -n "$FROM" ] || die "no readable Windows installation found. If Windows is BitLocker-encrypted: run
+  scripts/extract-firmware.ps1 in Windows (it writes to a folder you choose, e.g. a USB stick), then
+  sudo spx-extract-firmware --from /path/to/that/folder"
+fi
+[ -d "$FROM" ] || die "$FROM is not a directory"
+REPO=$(repo_of "$FROM")
+if [ -n "$REPO" ]; then MODE=windows; else MODE=folder; fi
+log "source: $FROM ($([ $MODE = windows ] && echo "Windows DriverStore" || echo "folder with extracted files"))"
+
+driverver() { # version from DriverVer= in an INF (UTF-16 or 8-bit)
+  local f=$1 enc=cat
+  [ "$(head -c2 "$f" | od -An -tx1 | tr -d ' ')" = fffe ] && enc="iconv -f UTF-16LE -t UTF-8"
+  $enc < "$f" 2>/dev/null | tr -d '\r' | sed -n 's/^[[:space:]]*DriverVer[[:space:]]*=[^,]*,[[:space:]]*\([0-9.]*\).*/\1/Ip' | head -1
+}
+declare -A PKG
+pkgdir() { # newest <inf>.inf_arm64_* package by DriverVer
+  local inf=$1 best="" bestv="" d v
+  [ -n "${PKG[$inf]+x}" ] && { echo "${PKG[$inf]}"; return; }
+  for d in "$REPO/$inf".inf_arm64_*; do
+    [ -d "$d" ] || continue
+    v=$(driverver "$d/$inf.inf" 2>/dev/null || true); v=${v:-0}
+    if [ -z "$best" ] || [ "$(printf '%s\n%s\n' "$bestv" "$v" | sort -V | tail -1)" = "$v" ] && [ "$v" != "$bestv" ]; then best=$d; bestv=$v; fi
+  done
+  PKG[$inf]=$best; echo "$best"
+}
+find_src() { # $1 inf, $2 file
+  if [ $MODE = windows ]; then local p; p=$(pkgdir "$1"); [ -n "$p" ] && [ -f "$p/$2" ] && echo "$p/$2"
+  else find "$FROM" -type f -name "$2" 2>/dev/null | sort | head -1; fi
+}
+
+# ---------- copy ----------
+OUTROOT=$DEST/updates
+tmpman=$(mktemp); missing=0; changed=0; copied=0
+printf 'status\tlinux_path\tsize\tsha256\tsource\n' > "$tmpman"
+while IFS=$'\t' read -r inf file dst req sha; do
+  case "$inf" in ''|'#'*) continue;; esac
+  dst=${dst//\{B\}/$B}
+  src=$(find_src "$inf" "$file" || true)
+  if [ -z "$src" ]; then
+    if [ "$req" = 1 ]; then st=MISSING; missing=$((missing+1)); else st=missing-optional; fi
+    printf '%s\t%s\t\t\t%s/%s\n' "$st" "$dst" "$inf" "$file" >> "$tmpman"; continue
+  fi
+  h=$(sha256sum "$src" | cut -d' ' -f1); sz=$(stat -c %s "$src"); st=ok
+  if [ "$sha" != - ] && [ "$h" != "$sha" ]; then st=ok-newer-driver; changed=$((changed+1)); fi
+  if [ $DRY = 0 ]; then install -D -m 0644 "$src" "$OUTROOT/$dst"; copied=$((copied+1)); fi
+  printf '%s\t%s\t%s\t%s\t%s\n' "$st" "$dst" "$sz" "$h" "${src#$FROM/}" >> "$tmpman"
+done < "$MAP"
+
+column -t -s $'\t' "$tmpman" 2>/dev/null | cut -c1-150 || cat "$tmpman"
+if [ $DRY = 0 ]; then
+  mkdir -p "$STATE"; { echo "# spx-extract-firmware $VERSION, $(date -Is), model $MODEL. Not redistributable."; cat "$tmpman"; } > "$STATE/manifest.tsv"
+fi
+rm -f "$tmpman"
+echo
+echo "model $MODEL: $([ $DRY = 1 ] && echo "dry run, nothing copied" || echo "$copied files in $OUTROOT"); $missing required missing; $changed with a newer driver than 2026-11-11."
+echo "Also needed, from Ubuntu: linux-firmware-qualcomm-graphics (a630_sqe.fw, a640_gmu.bin) and linux-firmware-qualcomm-wireless (ath10k firmware-5.bin)."
+[ $DRY = 1 ] || echo "Reboot to load the firmware (the DSPs, GPU, Wi-Fi and Bluetooth start at boot)."
+[ $missing = 0 ]

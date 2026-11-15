@@ -1,0 +1,27 @@
+# /etc/default/spx-boot: settings for the Surface Pro X boot menu (\EFI\spx\grub.cfg).
+# After changing anything here, run: sudo spx-boot update
+
+# Seconds the menu waits before booting the default entry
+SPX_TIMEOUT=3
+
+# How many kernels get a menu entry (newest first; the others stay installed)
+SPX_KEEP=2
+
+# Required for the Surface Pro X:
+#  deferred_probe_timeout=60  without it the display stays on the basic framebuffer (no GPU,
+#                             no brightness keys)
+#  fw_devlink.sync_state=timeout  lets unused clocks/power domains switch off later (suspend power)
+#  ssbd=force-on              avoids two firmware calls per kernel entry on the big cores (much
+#                             faster system calls; costs some single-thread compute)
+# (pd_ignore_unused is left out on purpose: it keeps unused power domains on and costs suspend power)
+SPX_CMDLINE_BASE="efi=novamap clk_ignore_unused deferred_probe_timeout=60 fw_devlink.sync_state=timeout ssbd=force-on"
+
+# Your additions, e.g. "quiet splash" or "loglevel=7"
+SPX_CMDLINE_EXTRA="quiet"
+
+# Device tree file name. Empty = choose from the machine's device-tree compatible
+# (cambria = SQ1 with LTE, caspar = SQ1 without modem, carina = SQ2)
+SPX_DTB=""
+
+# Add a "safe mode" entry (no GPU, touch, Type Cover or DSP drivers) for the newest kernel
+SPX_SAFE_MODE=yes

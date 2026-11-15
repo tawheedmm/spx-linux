@@ -1,0 +1,22 @@
+# Windows driver package (INF name) -> file -> Linux path under /lib/firmware/updates/
+# {B} = qcom/sc8180x/microsoft/<model> (cambria, caspar or carina; the DT firmware-name paths)
+# required: 1 = the device needs it, 0 = optional.  sha256: as measured from the Windows drivers
+# of 2026-11-11 (a different hash only gives a warning: Windows Update ships newer drivers).
+# inf	file	dest	required	sha256
+surfaceprox_subextadsp	qcadsp8180.mbn	{B}/qcadsp8180.mbn	1	09c06fe8e1c1e6c2c77cd2bbea754b34216a36f56ba9f9a7a3814cd2c31744d3
+surfaceprox_subextcdsp	qccdsp8180.mbn	{B}/qccdsp8180.mbn	1	2a276b79208e89c3299fa81a39ab47bc61a67b8ba13de2a5685f4a9d67d149c1
+surfaceprox_subextmpss	qcmpss8180.mbn	{B}/qcmpss8180.mbn	1	9ec7b6c6dae5d97af84ab71af6cb93b1892a4db1bd2b0b9de3e12a5d691a5439
+surfaceprox_subextmpss	qcmpss8180_nm.mbn	{B}/qcmpss8180_nm.mbn	1	2152816789c4b45c6687aac92d0d3d997197fb41bd1818d6af92bee135457975
+surfaceprox_subextscss	qcslpi8180.mbn	{B}/qcslpi8180.mbn	0	7964ffba743cc6c1042faa21ae016c492a733f4de031a087ba2796b1ed354d50
+qcdx8180	qcdxkmsuc8180.mbn	{B}/qcdxkmsuc8180.mbn	1	9c47234c2ffcd5337b4dbf1d82bb587b99afb9e523af959cc9dbb1a6338e62a8
+qcdx8180	qcvss8180.mbn	{B}/qcvss8180.mbn	0	891997ec156db83ca660359a30a7c139a923d9b9783ead523051816303614a68
+qcwlan8180	wlanmdsp.mbn	{B}/wlanmdsp.mbn	1	be774cfa5f0cdbdc333819186a162685cc7c63e7823e9e8ca25594974c121887
+qcwlan8180	bdwlan.b58	ath10k/WCN3990/hw1.0/board.bin	1	-
+qcbtfmuart8180	crbtfw21.tlv	qca/crbtfw21.tlv	1	b393b6377bd86c5834c59681a4143f8c9954198911d6665448006f18a3d64fe1
+qcbtfmuart8180	crnv21.bin	qca/crnv21.bin	1	b803e66675b06e4a18ffa0c41611e4792ee62c362e6d12f23610e53b2b9be08a
+qcbtfmuart8180	crnv21.b3c	qca/crnv21.b3c	1	2fc8074088c2b6961de126db6a8585fdb2174ca2fffee2de140ea71bdb3452a1
+qcbtfmuart8180	crnv21.b44	qca/crnv21.b44	1	cef4a0ccffdbd5612a82cf99bc0124b6f4e8bd9f390051acd54fbb104a94c964
+qcbtfmuart8180	crnv21.b45	qca/crnv21.b45	1	2fc8074088c2b6961de126db6a8585fdb2174ca2fffee2de140ea71bdb3452a1
+qcbtfmuart8180	crnv21.b46	qca/crnv21.b46	1	cef4a0ccffdbd5612a82cf99bc0124b6f4e8bd9f390051acd54fbb104a94c964
+qcbtfmuart8180	crnv21.b47	qca/crnv21.b47	1	cef4a0ccffdbd5612a82cf99bc0124b6f4e8bd9f390051acd54fbb104a94c964
+qcbtfmuart8180	crnv21.b71	qca/crnv21.b71	1	cef4a0ccffdbd5612a82cf99bc0124b6f4e8bd9f390051acd54fbb104a94c964

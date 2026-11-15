@@ -1,0 +1,8 @@
+#!/bin/sh
+# Kernel hook (installed in /etc/kernel/postinst.d and /etc/kernel/postrm.d): refresh the
+# Surface Pro X boot menu after a kernel is installed or removed. Runs after initramfs-tools
+# (alphabetical order), so the new initrd already exists. Does nothing until "spx-boot install".
+# A failure here only leaves the previous menu in place, so it warns instead of aborting apt.
+[ -x /usr/sbin/spx-boot ] || exit 0
+/usr/sbin/spx-boot update || echo "spx-boot: WARNING: could not update the boot menu; the previous menu is unchanged. Run: sudo spx-boot update" >&2
+exit 0

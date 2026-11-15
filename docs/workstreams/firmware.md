@@ -77,7 +77,7 @@ the one listed is what that resolves to today. SHA256 values are full.
 ### Found and deliberately ignored
 - `surfaceprox_tree…\hdcp1.mbn, hdcp2p2.mbn, hdcpsrm.mbn, storsec.mbn, pr_3_wp.mbn (ELF64)`: TrustZone apps (HDCP, secure storage, PlayReady). Linux doesn't load them.
 - `SurfaceTouchFw_4.0.200.139.bin`, SAM, TCON, PD, UEFI, Pen, Type Cover and Dock `*.payload.bin`: Windows firmware-update payloads (CFU), already flashed on the device. Linux needs none of them for touch/SAM to work.
-- `qcremotefs8180…\bootmodem_fs1/fs2` (2 MiB each): default modem EFS images. rmtfs uses the device's own EFS partitions. **Never write those partitions** (see PLAN.md rules).
+- `qcremotefs8180…\bootmodem_fs1/fs2` (2 MiB each): modem EFS images. Correction 2026-11-13: these are not just defaults and there are no EFS partitions on this machine. Windows keeps the live modem storage in these two files (written the same day, locked while Windows runs); see docs/upstream/github-54-reply-qzed.md. They hold this machine's modem data: never publish them, and never write to them from Linux.
 - Hexagon userspace libs (`ADSP\*.so`, `CDSP\*.so`, `fastrpc_shell_*`): only for fastrpc userspace later on.
 - `qcsmmu8180\SMMC.bin`, `RCDS.bin`, `SPMD.bin`, sensors JSON: Windows driver config.
 - `.jsn` pd-maps: not in Windows (linux-surface hand-wrote them). Not needed with the in-kernel `qcom_pd_mapper` (has sc8180x).

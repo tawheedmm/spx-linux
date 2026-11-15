@@ -273,6 +273,8 @@ jobs:
           for suite in testing stable; do
             if [ $suite = stable ]; then sel='map(select(.isPrerelease==false))'; else sel='.'; fi
             tags=$(jq -r "$sel | map(select(.tagName|startswith(\"kernel-\"))) | sort_by(.createdAt) | reverse | .[:$KEEP] | .[].tagName" releases.json)
+            # plus the newest setup-packages release (spx-boot, spx-system, keyring, iptsd; from packages.yml)
+            tags="$tags $(jq -r "$sel | map(select(.tagName|startswith(\"packages-\"))) | sort_by(.createdAt) | reverse | .[:1] | .[].tagName" releases.json)"
             d="repo/dists/$suite/main/binary-arm64"; mkdir -p "$d"; : > "$d/Packages"
             for t in $tags; do
               [ -d "repo/pool/$t" ] || gh release download "$t" --repo "$GITHUB_REPOSITORY" -p '*.deb' -D "repo/pool/$t"
@@ -293,6 +295,9 @@ jobs:
               gpg --batch --yes --pinentry-mode loopback --passphrase "$PASS" --local-user "$KEYID" -abs -o "dists/$suite/Release.gpg" "dists/$suite/Release" )
           done
           gpg --export "$KEYID" > repo/spx-archive-keyring.gpg
+          # the keyring package at a fixed address, for the one-step setup: sudo apt install ./spx-archive-keyring.deb
+          k=$(ls repo/pool/packages-*/spx-archive-keyring_*_all.deb 2>/dev/null | sort -V | tail -1 || true)
+          [ -n "$k" ] && cp "$k" repo/spx-archive-keyring.deb || true
           fpr=$(gpg --with-colons --fingerprint "$KEYID" | awk -F: '/^fpr/{print $10; exit}')
           # warning box from packaging/RELEASE-WARNING.md (escape HTML, then **bold** and `code`)
           WARN=$(sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' \

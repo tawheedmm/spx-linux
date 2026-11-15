@@ -1,0 +1,6 @@
+#!/bin/sh
+# Keep Waydroid's network script on nftables (our kernel has no legacy iptables).
+# Run by /etc/apt/apt.conf.d/99-spx-waydroid-nft after every dpkg run.
+F=/usr/lib/waydroid/data/scripts/waydroid-net.sh
+[ -f "$F" ] && grep -q '^LXC_USE_NFT="false"' "$F" && sed -i 's/^LXC_USE_NFT="false"/LXC_USE_NFT="true"/' "$F"
+exit 0

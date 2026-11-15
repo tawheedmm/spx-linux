@@ -46,7 +46,7 @@ Design and phases: [../docs/ROADMAP.md](../docs/ROADMAP.md). The kernel workflow
 maintainer'"'"'s approval through the `apt-publish` environment.\
 ' "$DEST/packaging/README.md"
 mkdir -p "$DEST/.github/workflows"
-mv "$DEST/packaging/workflows/kernel.yml" "$DEST/.github/workflows/kernel.yml"
+mv "$DEST"/packaging/workflows/*.yml "$DEST/.github/workflows/"
 rmdir "$DEST/packaging/workflows"
 
 # scrub: derive paths from the script location / environment instead of the owner's machine
@@ -85,6 +85,8 @@ check "ACPI SOSN value"             'SOSN, *0x0*[1-9A-Fa-f]'
 check "raw EDID header"             '00 ff ff ff ff ff ff 00'
 check "Wi-Fi credentials"           '^\s*(psk|ssid)=[0-9a-fA-F]{8,}'
 check "MSDM / product key"          '\bMSDM\b.*[A-Z0-9]{5}-[A-Z0-9]{5}'
+check "second unit (private)"       '([Tt]wo|[Bb]oth) (SQ1 |LTE |identical |of these )*(units|machines|laptops|devices)|([Ss]econd|2nd|other|spare) (unit|machine|laptop)|identical (unit|machine|laptop)'
+check "Claude / Anthropic mention"  '[Cc]laude|[Aa]nthropic'
 big=$(find . -path ./.git -prune -o -type f -size +1M -print)
 [ -z "$big" ] || { echo "PRIVACY CHECK FAILED: files over 1 MB:"; echo "$big"; fail=1; }
 bin=$(find . -path ./.git -prune -o -type f \( -iname '*.mbn' -o -iname '*.bin' -o -iname '*.elf' -o -iname '*.dat' -o -iname '*.img' -o -iname '*widevine*' -o -iname '*msdm*' \) -print)

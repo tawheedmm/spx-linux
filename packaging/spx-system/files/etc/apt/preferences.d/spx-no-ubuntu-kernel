@@ -1,0 +1,6 @@
+# Surface Pro X (spx-system): Ubuntu's generic arm64 kernels and boot loaders can't boot this
+# machine. Block them from the Ubuntu archive only; the linux-image-spx packages (origin
+# spx-linux) and Ubuntu's linux-firmware stay installable.
+Package: linux-image-* linux-headers-* linux-modules-* linux-generic* linux-signed-* grub-efi* grub-pc* shim-signed* flash-kernel
+Pin: release o=Ubuntu
+Pin-Priority: -1

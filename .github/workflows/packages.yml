@@ -1,0 +1,104 @@
+# Phase-2 packages for the Surface Pro X SQ1: spx-boot, spx-system, spx-archive-keyring, iptsd.
+# Builds in an Ubuntu 26.04 container on an arm64 runner and runs the spx-boot sandbox tests.
+# Publishing (manual, approved through the apt-publish environment) creates a pre-release
+# "packages-<date>-<run>" and asks kernel.yml to rebuild the signed apt repo, which picks up the
+# newest packages-* release next to the kernels.
+
+name: packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packaging/spx-boot/**
+      - packaging/spx-system/**
+      - packaging/spx-archive-keyring/**
+      - packaging/iptsd/**
+      - packaging/spx-firmware-extract/**
+      - .github/workflows/packages.yml
+  pull_request:
+    paths:
+      - packaging/spx-*/**
+      - packaging/iptsd/**
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish: create a pre-release (testing) and rebuild the apt repo"
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    container: ubuntu:26.04
+    permissions:
+      contents: read
+    steps:
+      - name: Install build tools
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends \
+            ca-certificates git file dpkg-dev gnupg grub-efi-arm64-bin xz-utils \
+            meson ninja-build pkg-config g++ libinih-dev libeigen3-dev libspdlog-dev \
+            libfmt-dev libcli11-dev libsystemd-dev
+
+      - uses: actions/checkout@v4
+
+      - name: Sandbox tests (spx-boot, spx-firmware-extract)
+        run: |
+          bash packaging/spx-boot/test-spx-boot.sh
+          bash packaging/spx-firmware-extract/test-extract.sh
+
+      - name: Build packages
+        run: |
+          mkdir -p out
+          bash packaging/spx-boot/build-deb.sh out
+          bash packaging/spx-system/build-deb.sh out
+          bash packaging/spx-archive-keyring/build-deb.sh out
+          bash packaging/iptsd/build-deb.sh out
+          bash packaging/spx-firmware-extract/build-deb.sh out
+          ( cd out && sha256sum *.deb > SHA256SUMS && cat SHA256SUMS )
+          for d in out/*.deb; do echo "== $d"; dpkg-deb -f "$d" Package Version Architecture Depends; done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spx-packages
+          path: out/
+          retention-days: 14
+
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: apt-publish
+    permissions:
+      contents: write     # create the Release
+      actions: write      # dispatch kernel.yml to rebuild the apt repo
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: packaging
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: spx-packages
+          path: out
+
+      - name: Create pre-release (testing)
+        run: |
+          tag="packages-$(date -u +%Y%m%d)-${GITHUB_RUN_NUMBER}"
+          { cat packaging/RELEASE-WARNING.md; echo
+            echo "Setup packages for the Surface Pro X SQ1: spx-boot (boot menu on the EFI partition, only after \`sudo spx-boot install\`), spx-system (device settings), spx-archive-keyring (apt key and source), iptsd (touch daemon, upstream build)."
+            echo; echo "Pre-release = 'testing' suite. Checksums in SHA256SUMS."
+          } > notes.md
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --prerelease --title "$tag" --notes-file notes.md out/*
+
+      - name: Rebuild the apt repo (kernel.yml, repo only; needs approval again)
+        run: gh workflow run kernel.yml --repo "$GITHUB_REPOSITORY" --ref main -f publish=false -f repo_only=true
