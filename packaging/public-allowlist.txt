@@ -14,13 +14,14 @@ boot/spx-waydroid-nft
 boot/99-spx-waydroid-nft
 
 # device trees and kernel patches (GPL-2.0; carry their own Signed-off-by)
-kernel-patches/README.md
-kernel-patches/spi-hid-v7/*.patch
+kernel-patches/spx/README.md
+kernel-patches/spx/*.patch
 # kernel-patches/audio-wip/  -> held until ajacocks agrees on credit (linux-surface#21)
 
 # kernel config fragments
 scripts/spx-cambria.config
 scripts/spx-camera.config
+scripts/spx-perf.config
 
 # tools
 scripts/extract-firmware.ps1

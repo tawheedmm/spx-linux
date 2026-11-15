@@ -1,0 +1,135 @@
+From c60a74fdc84ad6b048c6169ca25758827827dac4 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 12:15:44 -0500
+Subject: [PATCH 36/41] WIP: media: i2c: ov7251: enable the strobe output
+ (Surface Pro X IR emitter)
+
+On the Surface Pro X the face-authentication IR emitter is switched by
+the OV7251 STROBE pin, not by the PMIC flash LED block: with the strobe
+registers set as the Windows sensor module does (0x3005 = 0x08,
+0x3b81 = 0xaa, 0x3b8b = 0x00, 0x3b8e/8f = 0x03/0x08, 0x3b94/95 =
+0x05/0xf2, 0x3b96 = 0xc0) the scene is lit during exposure; the driver's
+defaults leave the strobe output disabled and the image dark.
+
+Hardcoded in the mode tables for now; needs a proper control or DT
+property before it can go upstream.
+
+---
+ drivers/media/i2c/ov7251.c | 36 ++++++++++++++++++------------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/media/i2c/ov7251.c b/drivers/media/i2c/ov7251.c
+index bd3927e307..7b39cc3698 100644
+--- a/drivers/media/i2c/ov7251.c
++++ b/drivers/media/i2c/ov7251.c
+@@ -240,7 +240,7 @@ static const struct reg_value ov7251_global_init_setting[] = {
+ };
+ 
+ static const struct reg_value ov7251_setting_vga_30fps[] = {
+-	{ 0x3005, 0x00 },
++	{ 0x3005, 0x08 },
+ 	{ 0x3012, 0xc0 },
+ 	{ 0x3013, 0xd2 },
+ 	{ 0x3014, 0x04 },
+@@ -314,7 +314,7 @@ static const struct reg_value ov7251_setting_vga_30fps[] = {
+ 	{ 0x3835, 0x0c },
+ 	{ 0x3837, 0x00 },
+ 	{ 0x3b80, 0x00 },
+-	{ 0x3b81, 0xa5 },
++	{ 0x3b81, 0xaa },
+ 	{ 0x3b82, 0x10 },
+ 	{ 0x3b83, 0x00 },
+ 	{ 0x3b84, 0x08 },
+@@ -324,14 +324,14 @@ static const struct reg_value ov7251_setting_vga_30fps[] = {
+ 	{ 0x3b88, 0x00 },
+ 	{ 0x3b89, 0x00 },
+ 	{ 0x3b8a, 0x00 },
+-	{ 0x3b8b, 0x05 },
++	{ 0x3b8b, 0x00 },
+ 	{ 0x3b8c, 0x00 },
+ 	{ 0x3b8d, 0x00 },
+-	{ 0x3b8e, 0x00 },
+-	{ 0x3b8f, 0x1a },
++	{ 0x3b8e, 0x03 },
++	{ 0x3b8f, 0x08 },
+ 	{ 0x3b94, 0x05 },
+ 	{ 0x3b95, 0xf2 },
+-	{ 0x3b96, 0x40 },
++	{ 0x3b96, 0xc0 },
+ 	{ 0x3c00, 0x89 },
+ 	{ 0x3c01, 0x63 },
+ 	{ 0x3c02, 0x01 },
+@@ -368,7 +368,7 @@ static const struct reg_value ov7251_setting_vga_30fps[] = {
+ };
+ 
+ static const struct reg_value ov7251_setting_vga_60fps[] = {
+-	{ 0x3005, 0x00 },
++	{ 0x3005, 0x08 },
+ 	{ 0x3012, 0xc0 },
+ 	{ 0x3013, 0xd2 },
+ 	{ 0x3014, 0x04 },
+@@ -442,7 +442,7 @@ static const struct reg_value ov7251_setting_vga_60fps[] = {
+ 	{ 0x3835, 0x0c },
+ 	{ 0x3837, 0x00 },
+ 	{ 0x3b80, 0x00 },
+-	{ 0x3b81, 0xa5 },
++	{ 0x3b81, 0xaa },
+ 	{ 0x3b82, 0x10 },
+ 	{ 0x3b83, 0x00 },
+ 	{ 0x3b84, 0x08 },
+@@ -452,14 +452,14 @@ static const struct reg_value ov7251_setting_vga_60fps[] = {
+ 	{ 0x3b88, 0x00 },
+ 	{ 0x3b89, 0x00 },
+ 	{ 0x3b8a, 0x00 },
+-	{ 0x3b8b, 0x05 },
++	{ 0x3b8b, 0x00 },
+ 	{ 0x3b8c, 0x00 },
+ 	{ 0x3b8d, 0x00 },
+-	{ 0x3b8e, 0x00 },
+-	{ 0x3b8f, 0x1a },
++	{ 0x3b8e, 0x03 },
++	{ 0x3b8f, 0x08 },
+ 	{ 0x3b94, 0x05 },
+ 	{ 0x3b95, 0xf2 },
+-	{ 0x3b96, 0x40 },
++	{ 0x3b96, 0xc0 },
+ 	{ 0x3c00, 0x89 },
+ 	{ 0x3c01, 0x63 },
+ 	{ 0x3c02, 0x01 },
+@@ -496,7 +496,7 @@ static const struct reg_value ov7251_setting_vga_60fps[] = {
+ };
+ 
+ static const struct reg_value ov7251_setting_vga_90fps[] = {
+-	{ 0x3005, 0x00 },
++	{ 0x3005, 0x08 },
+ 	{ 0x3012, 0xc0 },
+ 	{ 0x3013, 0xd2 },
+ 	{ 0x3014, 0x04 },
+@@ -570,7 +570,7 @@ static const struct reg_value ov7251_setting_vga_90fps[] = {
+ 	{ 0x3835, 0x0c },
+ 	{ 0x3837, 0x00 },
+ 	{ 0x3b80, 0x00 },
+-	{ 0x3b81, 0xa5 },
++	{ 0x3b81, 0xaa },
+ 	{ 0x3b82, 0x10 },
+ 	{ 0x3b83, 0x00 },
+ 	{ 0x3b84, 0x08 },
+@@ -580,14 +580,14 @@ static const struct reg_value ov7251_setting_vga_90fps[] = {
+ 	{ 0x3b88, 0x00 },
+ 	{ 0x3b89, 0x00 },
+ 	{ 0x3b8a, 0x00 },
+-	{ 0x3b8b, 0x05 },
++	{ 0x3b8b, 0x00 },
+ 	{ 0x3b8c, 0x00 },
+ 	{ 0x3b8d, 0x00 },
+-	{ 0x3b8e, 0x00 },
+-	{ 0x3b8f, 0x1a },
++	{ 0x3b8e, 0x03 },
++	{ 0x3b8f, 0x08 },
+ 	{ 0x3b94, 0x05 },
+ 	{ 0x3b95, 0xf2 },
+-	{ 0x3b96, 0x40 },
++	{ 0x3b96, 0xc0 },
+ 	{ 0x3c00, 0x89 },
+ 	{ 0x3c01, 0x63 },
+ 	{ 0x3c02, 0x01 },

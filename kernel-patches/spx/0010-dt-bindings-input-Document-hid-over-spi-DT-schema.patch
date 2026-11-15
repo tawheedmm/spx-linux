@@ -1,7 +1,7 @@
-From 3418f66f670844de58bb6b83ed19939eb3e0c8cd Mon Sep 17 00:00:00 2001
+From 1726bae830b47ebca2af1a69a250ef434c5d6130 Mon Sep 17 00:00:00 2001
 From: Dmitry Antipov <dmanti@microsoft.com>
 Date: Sat, 24 Oct 2026 00:51:42 +0000
-Subject: [PATCH 10/18] dt-bindings: input: Document hid-over-spi DT schema
+Subject: [PATCH 10/41] dt-bindings: input: Document hid-over-spi DT schema
 
 Documentation describes the required and optional properties for
 implementing Device Tree for a Microsoft G6 Touch Digitizer that
@@ -19,7 +19,7 @@ Reviewed-by: Rob Herring (Arm) <robh@kernel.org>
 
 diff --git a/Documentation/devicetree/bindings/input/hid-over-spi.yaml b/Documentation/devicetree/bindings/input/hid-over-spi.yaml
 new file mode 100644
-index 000000000..bed0746f0
+index 0000000000..bed0746f00
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/input/hid-over-spi.yaml
 @@ -0,0 +1,75 @@
@@ -98,6 +98,3 @@ index 000000000..bed0746f0
 +        pinctrl-0 = <&ts_d6_int_bias>;
 +      };
 +    };
--- 
-2.43.0
-

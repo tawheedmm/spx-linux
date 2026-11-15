@@ -1,7 +1,7 @@
-From b145d23634b814fb4a3b85ed16e20a5279b74b9c Mon Sep 17 00:00:00 2001
+From 13e188752620b27e19fcffc63769b4a349310c37 Mon Sep 17 00:00:00 2001
 From: Tawheed Makhdoomi <_@tawheed.cc>
 Date: Thu, 12 Nov 2026 11:59:39 -0500
-Subject: [PATCH 16/18] HID: spi-hid-of: add the Surface Pro X touch digitizer
+Subject: [PATCH 16/41] HID: spi-hid-of: add the Surface Pro X touch digitizer
 
 The Surface Pro X digitizer speaks the pre-release HID over SPI protocol
 revision. Both the input report header and body are read from 0x1000
@@ -18,7 +18,7 @@ Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
  1 file changed, 26 insertions(+)
 
 diff --git a/drivers/hid/spi-hid/spi-hid-of.c b/drivers/hid/spi-hid/spi-hid-of.c
-index 6de9affbe..429bf51ad 100644
+index 6de9affbeb..429bf51ad9 100644
 --- a/drivers/hid/spi-hid/spi-hid-of.c
 +++ b/drivers/hid/spi-hid/spi-hid-of.c
 @@ -62,6 +62,24 @@ static const struct spi_hid_of_data microsoft_g6_data = {
@@ -67,6 +67,3 @@ index 6de9affbe..429bf51ad 100644
  	{ }
  };
  MODULE_DEVICE_TABLE(spi, spi_hid_of_id_table);
--- 
-2.43.0
-

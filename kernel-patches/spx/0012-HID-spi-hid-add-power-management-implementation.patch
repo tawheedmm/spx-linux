@@ -1,7 +1,7 @@
-From 3ffeb59fc343056db15dcbc5b0557fbcf93e0413 Mon Sep 17 00:00:00 2001
+From 8badda88224e246edb91496c5729760ecc20e998 Mon Sep 17 00:00:00 2001
 From: Jingyuan Liang <jingyliang@chromium.org>
 Date: Sat, 24 Oct 2026 00:51:44 +0000
-Subject: [PATCH 12/18] HID: spi-hid: add power management implementation
+Subject: [PATCH 12/41] HID: spi-hid: add power management implementation
 
 Implement HID over SPI driver power management callbacks.
 
@@ -15,7 +15,7 @@ Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
  5 files changed, 192 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/hid/spi-hid/spi-hid-acpi.c b/drivers/hid/spi-hid/spi-hid-acpi.c
-index df459c71e..ea291ca26 100644
+index df459c71e2..ea291ca269 100644
 --- a/drivers/hid/spi-hid/spi-hid-acpi.c
 +++ b/drivers/hid/spi-hid/spi-hid-acpi.c
 @@ -246,6 +246,7 @@ static struct spi_driver spi_hid_acpi_driver = {
@@ -27,7 +27,7 @@ index df459c71e..ea291ca26 100644
  		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
  	},
 diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
-index 4ff93d227..3b8874ca0 100644
+index 4ff93d2271..3b8874ca0e 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.c
 +++ b/drivers/hid/spi-hid/spi-hid-core.c
 @@ -36,6 +36,8 @@
@@ -289,7 +289,7 @@ index 4ff93d227..3b8874ca0 100644
  MODULE_AUTHOR("Dmitry Antipov <dmanti@microsoft.com>");
  MODULE_LICENSE("GPL");
 diff --git a/drivers/hid/spi-hid/spi-hid-core.h b/drivers/hid/spi-hid/spi-hid-core.h
-index e66594b7a..060272353 100644
+index e66594b7a8..0602723532 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.h
 +++ b/drivers/hid/spi-hid/spi-hid-core.h
 @@ -92,6 +92,8 @@ struct spi_hid {
@@ -302,7 +302,7 @@ index e66594b7a..060272353 100644
  	u32 report_descriptor_crc32;	/* HID report descriptor crc32 checksum. */
  
 diff --git a/drivers/hid/spi-hid/spi-hid-of.c b/drivers/hid/spi-hid/spi-hid-of.c
-index d1bbdc171..6de9affbe 100644
+index d1bbdc1710..6de9affbeb 100644
 --- a/drivers/hid/spi-hid/spi-hid-of.c
 +++ b/drivers/hid/spi-hid/spi-hid-of.c
 @@ -195,6 +195,7 @@ static struct spi_driver spi_hid_of_driver = {
@@ -314,7 +314,7 @@ index d1bbdc171..6de9affbe 100644
  		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
  	},
 diff --git a/drivers/hid/spi-hid/spi-hid.h b/drivers/hid/spi-hid/spi-hid.h
-index a31956ef2..95acb2845 100644
+index a31956ef24..95acb28452 100644
 --- a/drivers/hid/spi-hid/spi-hid.h
 +++ b/drivers/hid/spi-hid/spi-hid.h
 @@ -40,4 +40,6 @@ int spi_hid_core_probe(struct spi_device *spi, struct spihid_ops *ops,
@@ -324,6 +324,3 @@ index a31956ef2..95acb2845 100644
 +extern const struct dev_pm_ops spi_hid_core_pm;
 +
  #endif /* SPI_HID_H */
--- 
-2.43.0
-

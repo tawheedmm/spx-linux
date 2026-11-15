@@ -1,7 +1,7 @@
-From 01a0952872eb86d4ce04f9f256999c97e5dfbb2a Mon Sep 17 00:00:00 2001
+From 72ae9c254e0d740c8f6bd9d7f366c3fbff67e5f6 Mon Sep 17 00:00:00 2001
 From: Tawheed Makhdoomi <_@tawheed.cc>
 Date: Thu, 12 Nov 2026 11:59:38 -0500
-Subject: [PATCH 15/18] HID: spi-hid: support the pre-release HID over SPI
+Subject: [PATCH 15/41] HID: spi-hid: support the pre-release HID over SPI
  protocol revision
 
 Some Microsoft digitizers, such as the one in the Surface Pro X, implement
@@ -47,7 +47,7 @@ Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
  3 files changed, 317 insertions(+), 41 deletions(-)
 
 diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
-index 496b33cdf..a1a69ff6f 100644
+index 496b33cdf3..a1a69ff6f0 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.c
 +++ b/drivers/hid/spi-hid/spi-hid-core.c
 @@ -68,6 +68,44 @@
@@ -530,7 +530,7 @@ index 496b33cdf..a1a69ff6f 100644
  
  	tmp = devm_krealloc(dev, shid->output, outbufsize, GFP_KERNEL | __GFP_ZERO);
 diff --git a/drivers/hid/spi-hid/spi-hid-core.h b/drivers/hid/spi-hid/spi-hid-core.h
-index 28e9880ad..2f7214b08 100644
+index 28e9880ad4..2f7214b083 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.h
 +++ b/drivers/hid/spi-hid/spi-hid-core.h
 @@ -40,6 +40,9 @@ struct spi_hid_device_descriptor {
@@ -552,7 +552,7 @@ index 28e9880ad..2f7214b08 100644
  	/* Response type awaited by a sync request, 0 if none. Protected by io_lock. */
  	u8 expected_response;
 diff --git a/drivers/hid/spi-hid/spi-hid.h b/drivers/hid/spi-hid/spi-hid.h
-index 95acb2845..171a723d0 100644
+index 95acb28452..171a723d06 100644
 --- a/drivers/hid/spi-hid/spi-hid.h
 +++ b/drivers/hid/spi-hid/spi-hid.h
 @@ -10,13 +10,38 @@
@@ -595,6 +595,3 @@ index 95acb2845..171a723d0 100644
  };
  
  /**
--- 
-2.43.0
-

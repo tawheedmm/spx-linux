@@ -1,7 +1,7 @@
-From 5b5ec53b4d838f99fe0a9ecce7be063b63fb58be Mon Sep 17 00:00:00 2001
+From 964d739ee48e0a9cbcddc3f52e78e792846dd16f Mon Sep 17 00:00:00 2001
 From: Tawheed Makhdoomi <_@tawheed.cc>
 Date: Thu, 12 Nov 2026 09:52:06 -0500
-Subject: [PATCH 18/18] drm/panel-edp: Add LGD LP129WT112684 panel
+Subject: [PATCH 18/41] drm/panel-edp: Add LGD LP129WT112684 panel
 
 Add the LG Display LP129WT112684 12.9" 2880x1920 eDP panel, used in the
 Microsoft Surface Pro X (SQ1). It uses the same timings as the other
@@ -13,13 +13,12 @@ probe hits the "Unknown panel" WARN.
 Panel ID: LGD 0x0555, EDID descriptors "LGD_DV1.0_" / "LP129WT112684".
 
 Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
-(cherry picked from commit d0bccbba17878d18ddd9794206e0481c95419b8b)
 ---
  drivers/gpu/drm/panel/panel-edp.c | 1 +
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/gpu/drm/panel/panel-edp.c b/drivers/gpu/drm/panel/panel-edp.c
-index f7add22cc..8f7d7a3b2 100644
+index f7add22ccf..8f7d7a3b20 100644
 --- a/drivers/gpu/drm/panel/panel-edp.c
 +++ b/drivers/gpu/drm/panel/panel-edp.c
 @@ -2190,6 +2190,7 @@ static const struct edp_panel_entry edp_panels[] = {
@@ -30,6 +29,3 @@ index f7add22cc..8f7d7a3b2 100644
  	EDP_PANEL_ENTRY('L', 'G', 'D', 0x0567, &delay_200_500_e200_d200, "Unknown"),
  	EDP_PANEL_ENTRY('L', 'G', 'D', 0x05af, &delay_200_500_e200_d200, "Unknown"),
  	EDP_PANEL_ENTRY('L', 'G', 'D', 0x05f1, &delay_200_500_e200_d200, "Unknown"),
--- 
-2.43.0
-

@@ -1,7 +1,7 @@
-From b8f2357180550e53e0cdfb9e4f83977ed6701aee Mon Sep 17 00:00:00 2001
+From 143a7f04c7e14e35221ae90f8355507dabfaa616 Mon Sep 17 00:00:00 2001
 From: Tawheed Makhdoomi <_@tawheed.cc>
 Date: Thu, 12 Nov 2026 10:53:14 -0500
-Subject: [PATCH 01/18] arm64: dts: qcom: surface-pro-x: enable QUP0/QUP2, add
+Subject: [PATCH 01/41] arm64: dts: qcom: surface-pro-x: enable QUP0/QUP2, add
  lid switch and NVMe 3.3V enable
 
 QUP wrapper 0 hosts spi1 (touch) and i2c2 (ALS); wrapper 2 hosts uart13
@@ -19,7 +19,7 @@ Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
  1 file changed, 56 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
-index 24312b96c..e1c5e9f0f 100644
+index 24312b96cb..e1c5e9f0f2 100644
 --- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
 +++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
 @@ -8,6 +8,7 @@
@@ -117,6 +117,3 @@ index 24312b96c..e1c5e9f0f 100644
  &remoteproc_adsp {
  	memory-region = <&adsp_mem>;
  };
--- 
-2.43.0
-

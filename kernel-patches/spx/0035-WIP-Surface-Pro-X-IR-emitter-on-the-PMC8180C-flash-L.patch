@@ -1,0 +1,68 @@
+From 1635cae64b02485f0d47f74952d4e880cd3aeab0 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 11:49:15 -0500
+Subject: [PATCH 35/41] WIP: Surface Pro X IR emitter on the PMC8180C flash LED
+ block
+
+The flash LED peripheral is on SID 5 at 0xd300 (type 0x18, subtype 0x04
+read back on the hardware). Describe channel 1 as the IR emitter with a
+200 mA torch limit.
+
+---
+ .../qcom/sc8180x-microsoft-surface-pro-x.dtsi | 19 +++++++++++++++++++
+ arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi   |  8 ++++++++
+ 2 files changed, 27 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index 1d51f50d17..125dc50a1e 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -15,6 +15,7 @@
+ #include <dt-bindings/spmi/spmi.h>
+ #include <dt-bindings/iio/qcom,spmi-vadc.h>
+ #include <dt-bindings/media/video-interface-devices.h>
++#include <dt-bindings/leds/common.h>
+ #include "sc8180x.dtsi"
+ #include "sc8180x-pmics.dtsi"
+ 
+@@ -1153,3 +1154,21 @@ vreg_l14a_1p8: l14 {
+ 		};
+ 	};
+ };
++
++/*
++ * IR emitter for the OV7251 face camera: PMIC flash LED block (SID 5, 0xd300,
++ * type 0x18 subtype 0x04 read back on hardware). Windows drives LED1 at 600 mA
++ * while the IR sensor is on; keep the torch limit far below that.
++ */
++&pmc8180c_flash {
++	status = "okay";
++
++	ir_emitter: led-0 {
++		function = LED_FUNCTION_FLASH;
++		color = <LED_COLOR_ID_IR>;
++		led-sources = <1>;
++		led-max-microamp = <200000>;
++		flash-max-microamp = <600000>;
++		flash-max-timeout-us = <1280000>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi
+index 2c76eccb92..e7d89ee259 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi
+@@ -322,6 +322,14 @@ pmc8180c_gpios: gpio@c000 {
+ 	pmic@5 {
+ 		compatible = "qcom,pmc8180c", "qcom,spmi-pmic";
+ 		reg = <0x5 SPMI_USID>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		pmc8180c_flash: led-controller@d300 {
++			compatible = "qcom,pm8150c-flash-led", "qcom,spmi-flash-led";
++			reg = <0xd300>;
++			status = "disabled";
++		};
+ 
+ 		pmc8180c_lpg: pwm {
+ 			compatible = "qcom,pmc8180c-lpg";

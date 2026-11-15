@@ -1,0 +1,26 @@
+From 5f2cde548a37e6368bf9f6d9fc9d0da580c693b5 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 07:29:27 -0500
+Subject: [PATCH 29/41] WIP: give L14A 10 ms to settle after enable
+
+The front sensor probes at boot (L14A already up for the IR sensor) but
+its software-reset write times out on CCI when it powers up alone at
+stream start. Windows waits after the LDO vote too; try a ramp delay.
+
+---
+ arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index cb17aa81f1..c6287b3816 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -1147,6 +1147,8 @@ vreg_l14a_1p8: l14 {
+ 			regulator-name = "vreg_l14a_1p8";
+ 			regulator-min-microvolt = <1800000>;
+ 			regulator-max-microvolt = <1800000>;
++			/* LDO soft start: sensors time out on CCI if accessed right after enable */
++			regulator-enable-ramp-delay = <10000>;
+ 		};
+ 	};
+ };

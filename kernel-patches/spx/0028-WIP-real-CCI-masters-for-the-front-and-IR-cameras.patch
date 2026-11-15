@@ -1,0 +1,136 @@
+From 1b45764479d3184de2bd5d80a53e92985967c41d Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 00:44:09 -0500
+Subject: [PATCH 28/41] WIP: real CCI masters for the front and IR cameras
+
+Probing a copy of each sensor on every CCI master: OV7251 (IR) answers on
+CCI0 master 0 ("OV7251 revision 7 (1F) detected at address 0x60"),
+OV5693 (front) on CCI0 master 1. This matches ACPI CAMP.PCFG read as
+{IR, front, rear} with the low byte = (master << 4) | CCI core, which
+puts the rear sensor on CCI1 master 1. Byte 2 gives the CSIPHY: IR 2,
+rear 3, front 0x01 (CSIPHY0 or 1, unverified); wire IR to CSIPHY2 and
+front to CSIPHY0.
+
+---
+ .../qcom/sc8180x-microsoft-surface-pro-x.dtsi | 76 +++++++++----------
+ 1 file changed, 38 insertions(+), 38 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index 917ff14e25..cb17aa81f1 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -461,9 +461,9 @@ &camss {
+ 	status = "okay";
+ 
+ 	ports {
+-
+-		port@2 {
+-			csiphy2_ep: endpoint@0 {
++		/* CSIPHY per ACPI CAMP.PCFG: IR 2, rear 3; front 0 or 1 (0x01, unverified) */
++		port@0 {
++			csiphy0_ep: endpoint@0 {
+ 				reg = <0>;
+ 				clock-lanes = <7>;
+ 				data-lanes = <0 1>;
+@@ -471,8 +471,8 @@ csiphy2_ep: endpoint@0 {
+ 			};
+ 		};
+ 
+-		port@3 {
+-			csiphy3_ep: endpoint@0 {
++		port@2 {
++			csiphy2_ep: endpoint@0 {
+ 				reg = <0>;
+ 				clock-lanes = <7>;
+ 				data-lanes = <0>;
+@@ -487,12 +487,39 @@ &cci0 {
+ };
+ 
+ &cci0_i2c0 {
+-	/* Rear camera module also has a DW9800 VCM and an M24C64 EEPROM (not described) */
++	/*
++	 * Found by probing every CCI master (2026-11-13); matches ACPI CAMP.PCFG
++	 * read as {IR, front, rear}, low byte = (master << 4) | CCI core.
++	 */
++	camera@60 {
++		compatible = "ovti,ov7251";
++		reg = <0x60>;
++
++		clocks = <&camcc CAM_CC_MCLK3_CLK>;
++		assigned-clocks = <&camcc CAM_CC_MCLK3_CLK>;
++		assigned-clock-rates = <19200000>;
++
++		enable-gpios = <&tlmm 23 GPIO_ACTIVE_HIGH>;
++		pinctrl-0 = <&cam_mclk3_default>, <&cam_ir_default>;
++		pinctrl-names = "default";
++
++		/* Only DOVDD is switched by Windows; AVDD/DVDD come from elsewhere */
++
++		orientation = <MEDIA_ORIENTATION_FRONT>;
++
++		vdddo-supply = <&vreg_l14a_1p8>;
++
++		port {
++			cam_ir_ep: endpoint {
++				data-lanes = <1>;
++				link-frequencies = /bits/ 64 <240000000 319200000>;
++				remote-endpoint = <&csiphy2_ep>;
++			};
++		};
++	};
+ };
+ 
+-&cci1_i2c0 {
+-	/* ACPI CAMP.PCFG: front sensor word 0x00010010 -> CCI1 master 0 */
+-	/* Front camera module also has an M24C64 EEPROM (not described) */
++&cci0_i2c1 {
+ 	camera@36 {
+ 		compatible = "ovti,ov5693";
+ 		reg = <0x36>;
+@@ -516,44 +543,17 @@ port {
+ 			cam_front_ep: endpoint {
+ 				data-lanes = <1 2>;
+ 				link-frequencies = /bits/ 64 <419200000>;
+-				remote-endpoint = <&csiphy2_ep>;
++				remote-endpoint = <&csiphy0_ep>;
+ 			};
+ 		};
+ 	};
+ };
+ 
++
+ &cci1 {
+ 	status = "okay";
+ };
+ 
+-&cci1_i2c1 {
+-	camera@60 {
+-		compatible = "ovti,ov7251";
+-		reg = <0x60>;
+-
+-		clocks = <&camcc CAM_CC_MCLK3_CLK>;
+-		assigned-clocks = <&camcc CAM_CC_MCLK3_CLK>;
+-		assigned-clock-rates = <19200000>;
+-
+-		enable-gpios = <&tlmm 23 GPIO_ACTIVE_HIGH>;
+-		pinctrl-0 = <&cam_mclk3_default>, <&cam_ir_default>;
+-		pinctrl-names = "default";
+-
+-		/* Only DOVDD is switched by Windows; AVDD/DVDD come from elsewhere */
+-
+-		orientation = <MEDIA_ORIENTATION_FRONT>;
+-
+-		vdddo-supply = <&vreg_l14a_1p8>;
+-
+-		port {
+-			cam_ir_ep: endpoint {
+-				data-lanes = <1>;
+-				link-frequencies = /bits/ 64 <240000000 319200000>;
+-				remote-endpoint = <&csiphy3_ep>;
+-			};
+-		};
+-	};
+-};
+ 
+ &dispcc {
+ 	status = "okay";

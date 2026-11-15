@@ -1,7 +1,7 @@
-From c203809866bcfd7cb776443ca753859fed57eff4 Mon Sep 17 00:00:00 2001
+From adcc8af739bf1355b6c18fd8c8dd58f683da21f9 Mon Sep 17 00:00:00 2001
 From: Tawheed Makhdoomi <_@tawheed.cc>
 Date: Thu, 12 Nov 2026 11:19:57 -0500
-Subject: [PATCH 17/18] arm64: dts: qcom: surface-pro-x: describe the digitizer
+Subject: [PATCH 17/41] arm64: dts: qcom: surface-pro-x: describe the digitizer
  for the upstream spi-hid driver
 
 The Surface Pro X digitizer (045E:0996) is a HID over SPI device that
@@ -20,7 +20,7 @@ Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
  1 file changed, 4 insertions(+), 46 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
-index e1c5e9f0f..160a53c4d 100644
+index e1c5e9f0f2..160a53c4d3 100644
 --- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
 +++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
 @@ -502,22 +502,6 @@ spi1_hid0_reset: spi1-hid1-reset {
@@ -100,6 +100,3 @@ index e1c5e9f0f..160a53c4d 100644
  	};
  };
  
--- 
-2.43.0
-

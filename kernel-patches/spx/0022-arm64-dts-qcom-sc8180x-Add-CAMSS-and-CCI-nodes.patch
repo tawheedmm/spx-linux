@@ -1,0 +1,368 @@
+From 5b08eec50b9e60dfd2d9ce854c87a07e4fb0cdaf Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Thu, 12 Nov 2026 15:54:01 -0500
+Subject: [PATCH 22/41] arm64: dts: qcom: sc8180x: Add CAMSS and CCI nodes
+
+Describe the camera subsystem (four CSIPHYs, IFE0/1 and IFE-lite 0/1 with
+their CSIDs) and the CCI0/CCI1 controllers with their TLMM states. The
+driver already matches qcom,sc8180x-camss with the SM8150 resources.
+
+Registers and interrupts match the Windows ACPI tables of the Surface Pro X
+(\_SB.MPCS for the CSIPHYs, \_SB.VFE0 for IFE/CSID, \_SB.CAMP for CCI). The
+SoC has two more IFE and IFE-lite blocks and two more CCI controllers; they
+are left out, as the driver does not use them. The SMMU stream IDs are taken
+from the SM8150 description by Andrew Gigena and are unverified on SC8180X.
+
+All nodes are disabled; boards enable them.
+
+Based on the SM8150 nodes by Andrew Gigena.
+Link: https://github.com/andrewgigena/linux/tree/v7.4-rc1/sm8150-camss-v2
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ arch/arm64/boot/dts/qcom/sc8180x.dtsi | 325 ++++++++++++++++++++++++++
+ 1 file changed, 325 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x.dtsi
+index ee1a83a589..228c56edb3 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x.dtsi
+@@ -2478,6 +2478,74 @@ tlmm: pinctrl@3100000 {
+ 			#interrupt-cells = <2>;
+ 			gpio-ranges = <&tlmm 0 0 191>;
+ 			wakeup-parent = <&pdc>;
++
++			cci0_default: cci0-default-state {
++				cci0_i2c0_default: cci0-i2c0-default-pins {
++					/* SDA, SCL */
++					pins = "gpio17", "gpio18";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-up;
++				};
++
++				cci0_i2c1_default: cci0-i2c1-default-pins {
++					/* SDA, SCL */
++					pins = "gpio19", "gpio20";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-up;
++				};
++			};
++
++			cci0_sleep: cci0-sleep-state {
++				cci0_i2c0_sleep: cci0-i2c0-sleep-pins {
++					pins = "gpio17", "gpio18";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-down;
++				};
++
++				cci0_i2c1_sleep: cci0-i2c1-sleep-pins {
++					pins = "gpio19", "gpio20";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-down;
++				};
++			};
++
++			cci1_default: cci1-default-state {
++				cci1_i2c0_default: cci1-i2c0-default-pins {
++					/* SDA, SCL */
++					pins = "gpio31", "gpio32";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-up;
++				};
++
++				cci1_i2c1_default: cci1-i2c1-default-pins {
++					/* SDA, SCL */
++					pins = "gpio33", "gpio34";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-up;
++				};
++			};
++
++			cci1_sleep: cci1-sleep-state {
++				cci1_i2c0_sleep: cci1-i2c0-sleep-pins {
++					pins = "gpio31", "gpio32";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-down;
++				};
++
++				cci1_i2c1_sleep: cci1-i2c1-sleep-pins {
++					pins = "gpio33", "gpio34";
++					function = "cci_i2c";
++					drive-strength = <2>;
++					bias-pull-down;
++				};
++			};
+ 		};
+ 
+ 		remoteproc_mpss: remoteproc@4080000 {
+@@ -3018,6 +3086,263 @@ videocc: clock-controller@ab00000 {
+ 			#power-domain-cells = <1>;
+ 		};
+ 
++		cci0: cci@ac4a000 {
++			compatible = "qcom,sc8180x-cci", "qcom,msm8996-cci";
++			reg = <0 0x0ac4a000 0 0x1000>;
++			interrupts = <GIC_SPI 460 IRQ_TYPE_EDGE_RISING>;
++			power-domains = <&camcc TITAN_TOP_GDSC>;
++
++			clocks = <&camcc CAM_CC_CAMNOC_AXI_CLK>,
++				 <&camcc CAM_CC_SLOW_AHB_CLK_SRC>,
++				 <&camcc CAM_CC_CPAS_AHB_CLK>,
++				 <&camcc CAM_CC_CCI_0_CLK>,
++				 <&camcc CAM_CC_CCI_0_CLK_SRC>;
++			clock-names = "camnoc_axi",
++				      "slow_ahb_src",
++				      "cpas_ahb",
++				      "cci",
++				      "cci_src";
++
++			pinctrl-0 = <&cci0_default>;
++			pinctrl-1 = <&cci0_sleep>;
++			pinctrl-names = "default", "sleep";
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			status = "disabled";
++
++			cci0_i2c0: i2c-bus@0 {
++				reg = <0>;
++				clock-frequency = <1000000>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++
++			cci0_i2c1: i2c-bus@1 {
++				reg = <1>;
++				clock-frequency = <1000000>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
++		cci1: cci@ac4b000 {
++			compatible = "qcom,sc8180x-cci", "qcom,msm8996-cci";
++			reg = <0 0x0ac4b000 0 0x1000>;
++			interrupts = <GIC_SPI 271 IRQ_TYPE_EDGE_RISING>;
++			power-domains = <&camcc TITAN_TOP_GDSC>;
++
++			clocks = <&camcc CAM_CC_CAMNOC_AXI_CLK>,
++				 <&camcc CAM_CC_SLOW_AHB_CLK_SRC>,
++				 <&camcc CAM_CC_CPAS_AHB_CLK>,
++				 <&camcc CAM_CC_CCI_1_CLK>,
++				 <&camcc CAM_CC_CCI_1_CLK_SRC>;
++			clock-names = "camnoc_axi",
++				      "slow_ahb_src",
++				      "cpas_ahb",
++				      "cci",
++				      "cci_src";
++
++			pinctrl-0 = <&cci1_default>;
++			pinctrl-1 = <&cci1_sleep>;
++			pinctrl-names = "default", "sleep";
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			status = "disabled";
++
++			cci1_i2c0: i2c-bus@0 {
++				reg = <0>;
++				clock-frequency = <1000000>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++
++			cci1_i2c1: i2c-bus@1 {
++				reg = <1>;
++				clock-frequency = <1000000>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
++		};
++
++		/*
++		 * Titan 175 class CAMSS. The SoC has four IFE + four IFE-lite
++		 * (per the Windows ACPI tables), the driver uses the SM8150
++		 * subset: IFE0/1 and IFE-lite 0/1 with their CSIDs.
++		 */
++		camss: camss@ac65000 {
++			compatible = "qcom,sc8180x-camss";
++
++			reg = <0 0x0ac65000 0 0x1000>,
++			      <0 0x0ac66000 0 0x1000>,
++			      <0 0x0ac67000 0 0x1000>,
++			      <0 0x0ac68000 0 0x1000>,
++			      <0 0x0acaf000 0 0x4000>,
++			      <0 0x0acb3000 0 0x1000>,
++			      <0 0x0acb6000 0 0x4000>,
++			      <0 0x0acba000 0 0x1000>,
++			      <0 0x0acc4000 0 0x4000>,
++			      <0 0x0acc8000 0 0x1000>,
++			      <0 0x0accb000 0 0x4000>,
++			      <0 0x0accf000 0 0x1000>;
++			reg-names = "csiphy0",
++				    "csiphy1",
++				    "csiphy2",
++				    "csiphy3",
++				    "vfe0",
++				    "csid0",
++				    "vfe1",
++				    "csid1",
++				    "vfe_lite0",
++				    "csid_lite0",
++				    "vfe_lite1",
++				    "csid_lite1";
++
++			interrupts = <GIC_SPI 477 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 478 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 479 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 448 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 465 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 464 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 467 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 466 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 469 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 468 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 360 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 359 IRQ_TYPE_EDGE_RISING>;
++			interrupt-names = "csiphy0",
++					  "csiphy1",
++					  "csiphy2",
++					  "csiphy3",
++					  "vfe0",
++					  "csid0",
++					  "vfe1",
++					  "csid1",
++					  "vfe_lite0",
++					  "csid_lite0",
++					  "vfe_lite1",
++					  "csid_lite1";
++
++			power-domains = <&camcc IFE_0_GDSC>,
++					<&camcc IFE_1_GDSC>,
++					<&camcc TITAN_TOP_GDSC>;
++			power-domain-names = "ife0",
++					     "ife1",
++					     "top";
++
++			clocks = <&camcc CAM_CC_CAMNOC_AXI_CLK>,
++				 <&camcc CAM_CC_CPAS_AHB_CLK>,
++				 <&camcc CAM_CC_CSIPHY0_CLK>,
++				 <&camcc CAM_CC_CSI0PHYTIMER_CLK>,
++				 <&camcc CAM_CC_CSIPHY1_CLK>,
++				 <&camcc CAM_CC_CSI1PHYTIMER_CLK>,
++				 <&camcc CAM_CC_CSIPHY2_CLK>,
++				 <&camcc CAM_CC_CSI2PHYTIMER_CLK>,
++				 <&camcc CAM_CC_CSIPHY3_CLK>,
++				 <&camcc CAM_CC_CSI3PHYTIMER_CLK>,
++				 <&camcc CAM_CC_IFE_0_AXI_CLK>,
++				 <&camcc CAM_CC_IFE_0_CLK>,
++				 <&camcc CAM_CC_IFE_0_CPHY_RX_CLK>,
++				 <&camcc CAM_CC_IFE_0_CSID_CLK>,
++				 <&camcc CAM_CC_IFE_1_AXI_CLK>,
++				 <&camcc CAM_CC_IFE_1_CLK>,
++				 <&camcc CAM_CC_IFE_1_CPHY_RX_CLK>,
++				 <&camcc CAM_CC_IFE_1_CSID_CLK>,
++				 <&camcc CAM_CC_IFE_LITE_0_CLK>,
++				 <&camcc CAM_CC_IFE_LITE_0_CPHY_RX_CLK>,
++				 <&camcc CAM_CC_IFE_LITE_0_CSID_CLK>,
++				 <&camcc CAM_CC_IFE_LITE_1_CLK>,
++				 <&camcc CAM_CC_IFE_LITE_1_CPHY_RX_CLK>,
++				 <&camcc CAM_CC_IFE_LITE_1_CSID_CLK>,
++				 <&gcc GCC_CAMERA_AHB_CLK>,
++				 <&gcc GCC_CAMERA_HF_AXI_CLK>,
++				 <&gcc GCC_CAMERA_SF_AXI_CLK>;
++			clock-names = "camnoc_axi",
++				      "cpas_ahb",
++				      "csiphy0",
++				      "csiphy0_timer",
++				      "csiphy1",
++				      "csiphy1_timer",
++				      "csiphy2",
++				      "csiphy2_timer",
++				      "csiphy3",
++				      "csiphy3_timer",
++				      "vfe0_axi",
++				      "vfe0",
++				      "vfe0_cphy_rx",
++				      "vfe0_csid",
++				      "vfe1_axi",
++				      "vfe1",
++				      "vfe1_cphy_rx",
++				      "vfe1_csid",
++				      "vfe_lite0",
++				      "vfe_lite0_cphy_rx",
++				      "vfe_lite0_csid",
++				      "vfe_lite1",
++				      "vfe_lite1_cphy_rx",
++				      "vfe_lite1_csid",
++				      "gcc_ahb",
++				      "gcc_axi_hf",
++				      "gcc_axi_sf";
++
++			/* Stream IDs taken from the SM8150 description (unverified on SC8180X) */
++			iommus = <&apps_smmu 0x840 0x620>,
++				 <&apps_smmu 0x860 0x620>,
++				 <&apps_smmu 0xa40 0x620>,
++				 <&apps_smmu 0xa60 0x620>,
++				 <&apps_smmu 0xc40 0x620>,
++				 <&apps_smmu 0xc60 0x620>,
++				 <&apps_smmu 0xe40 0x620>,
++				 <&apps_smmu 0xe60 0x620>;
++
++			interconnects = <&gem_noc MASTER_AMPSS_M0 QCOM_ICC_TAG_ACTIVE_ONLY
++					 &config_noc SLAVE_CAMERA_CFG QCOM_ICC_TAG_ACTIVE_ONLY>,
++					<&mmss_noc MASTER_CAMNOC_HF0 QCOM_ICC_TAG_ALWAYS
++					 &mc_virt SLAVE_EBI_CH0 QCOM_ICC_TAG_ALWAYS>,
++					<&mmss_noc MASTER_CAMNOC_HF1 QCOM_ICC_TAG_ALWAYS
++					 &mc_virt SLAVE_EBI_CH0 QCOM_ICC_TAG_ALWAYS>,
++					<&mmss_noc MASTER_CAMNOC_SF QCOM_ICC_TAG_ALWAYS
++					 &mc_virt SLAVE_EBI_CH0 QCOM_ICC_TAG_ALWAYS>;
++			interconnect-names = "cam_ahb",
++					     "cam_hf_0_mnoc",
++					     "cam_hf_1_mnoc",
++					     "cam_sf_0_mnoc";
++
++			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				port@0 {
++					reg = <0>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				port@1 {
++					reg = <1>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				port@2 {
++					reg = <2>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				port@3 {
++					reg = <3>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++			};
++		};
++
+ 		camcc: clock-controller@ad00000 {
+ 			compatible = "qcom,sc8180x-camcc";
+ 			reg = <0 0x0ad00000 0 0x20000>;

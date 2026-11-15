@@ -1,0 +1,40 @@
+From d3bf86f9daa1e67cd0b5b42573ff0acf5f951218 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 08:52:25 -0500
+Subject: [PATCH 31/41] arm64: dts: qcom: sc8180x: use the SC8180X IFE stream
+ IDs for CAMSS
+
+The CAMSS node copied the SM8150 SMMU stream IDs (0x840/0x620). The
+SC8180X firmware (ACPI IORT, camera AVStream node) lists 0xa00..0xae0
+and 0xe00..0xee0 for the IFEs instead, so most IFE streams had no SMR.
+On the Surface Pro X the RDI write master then completed buffers that
+stayed all-zero, and the machine hung at random points while streaming.
+
+---
+ arch/arm64/boot/dts/qcom/sc8180x.dtsi | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x.dtsi
+index 228c56edb3..16cd81f6dd 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x.dtsi
+@@ -3289,14 +3289,11 @@ camss: camss@ac65000 {
+ 				      "gcc_axi_sf";
+ 
+ 			/* Stream IDs taken from the SM8150 description (unverified on SC8180X) */
+-			iommus = <&apps_smmu 0x840 0x620>,
+-				 <&apps_smmu 0x860 0x620>,
+-				 <&apps_smmu 0xa40 0x620>,
+-				 <&apps_smmu 0xa60 0x620>,
+-				 <&apps_smmu 0xc40 0x620>,
+-				 <&apps_smmu 0xc60 0x620>,
+-				 <&apps_smmu 0xe40 0x620>,
+-				 <&apps_smmu 0xe60 0x620>;
++			/*
++			 * IFE stream IDs from the SC8180X firmware (ACPI IORT, AVS0):
++			 * 0xa00..0xae0 and 0xe00..0xee0. They differ from SM8150.
++			 */
++			iommus = <&apps_smmu 0xa00 0x4e0>;
+ 
+ 			interconnects = <&gem_noc MASTER_AMPSS_M0 QCOM_ICC_TAG_ACTIVE_ONLY
+ 					 &config_noc SLAVE_CAMERA_CFG QCOM_ICC_TAG_ACTIVE_ONLY>,

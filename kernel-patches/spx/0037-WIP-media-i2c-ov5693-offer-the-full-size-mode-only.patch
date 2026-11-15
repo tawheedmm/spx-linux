@@ -1,0 +1,40 @@
+From c6c9b08d03ccd1641f209e3230bf96f450ee57bc Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 12:39:13 -0500
+Subject: [PATCH 37/41] WIP: media: i2c: ov5693: offer the full-size mode only
+
+On the Surface Pro X (SC8180X CAMSS, 2 lanes, 19.2 MHz clock) the 2x2
+binned 1296x972 mode produces no frames, while 2592x1944 works.
+libcamera picks the binned mode for 720p/1080p requests, so no app gets
+a picture. Until the binned mode is understood, only expose the full
+size and let userspace scale.
+
+---
+ drivers/media/i2c/ov5693.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/i2c/ov5693.c b/drivers/media/i2c/ov5693.c
+index 496c3cb587..6820d8f287 100644
+--- a/drivers/media/i2c/ov5693.c
++++ b/drivers/media/i2c/ov5693.c
+@@ -863,6 +863,10 @@ static int ov5693_set_fmt(struct v4l2_subdev *sd,
+ 	fmt = __ov5693_get_pad_format(ov5693, state, format->pad,
+ 				      format->which);
+ 
++	/* SPX WIP: no binning, see ov5693_enum_frame_size() */
++	hratio = 1;
++	vratio = 1;
++
+ 	fmt->width = crop->width / hratio;
+ 	fmt->height = crop->height / vratio;
+ 	fmt->code = MEDIA_BUS_FMT_SBGGR10_1X10;
+@@ -1066,7 +1070,8 @@ static int ov5693_enum_frame_size(struct v4l2_subdev *sd,
+ 	struct ov5693_device *ov5693 = to_ov5693_sensor(sd);
+ 	struct v4l2_rect *__crop;
+ 
+-	if (fse->index > 1 || fse->code != MEDIA_BUS_FMT_SBGGR10_1X10)
++	/* SPX WIP: binned (1/2) mode gives no frames through CAMSS yet; offer full size only */
++	if (fse->index > 0 || fse->code != MEDIA_BUS_FMT_SBGGR10_1X10)
+ 		return -EINVAL;
+ 
+ 	__crop = __ov5693_get_pad_crop(ov5693, state, fse->pad, fse->which);

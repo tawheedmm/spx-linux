@@ -1,7 +1,7 @@
-From b169001061b6f457c0d2c3916f8a113464a74e79 Mon Sep 17 00:00:00 2001
+From d50f0e18a0c41c50c29b8e931d1775d9cb5e05dd Mon Sep 17 00:00:00 2001
 From: Jarrett Schultz <jaschultz@microsoft.com>
 Date: Sat, 24 Oct 2026 00:51:36 +0000
-Subject: [PATCH 04/18] HID: Add BUS_SPI support and define HID_SPI_DEVICE
+Subject: [PATCH 04/41] HID: Add BUS_SPI support and define HID_SPI_DEVICE
  macro
 
 If connecting a hid_device with bus field indicating BUS_SPI print out
@@ -20,7 +20,7 @@ Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
  2 files changed, 5 insertions(+)
 
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index b4fd482d3..3ee8356a9 100644
+index b4fd482d39..3ee8356a9a 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
 @@ -2373,6 +2373,9 @@ int hid_connect(struct hid_device *hdev, unsigned int connect_mask)
@@ -34,7 +34,7 @@ index b4fd482d3..3ee8356a9 100644
  		bus = "SOUNDWIRE";
  		break;
 diff --git a/include/linux/hid.h b/include/linux/hid.h
-index 8d17b7416..45f713fe9 100644
+index 8d17b74163..45f713fe99 100644
 --- a/include/linux/hid.h
 +++ b/include/linux/hid.h
 @@ -821,6 +821,8 @@ struct hid_descriptor {
@@ -46,6 +46,3 @@ index 8d17b7416..45f713fe9 100644
  
  #define HID_REPORT_ID(rep) \
  	.report_type = (rep)
--- 
-2.43.0
-

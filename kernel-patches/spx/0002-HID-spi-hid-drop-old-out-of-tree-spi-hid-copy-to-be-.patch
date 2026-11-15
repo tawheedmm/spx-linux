@@ -1,7 +1,7 @@
-From 9869c2fc5e97bce2892f397819399a68c888eb11 Mon Sep 17 00:00:00 2001
+From 885edfefc6ff485e96e354995bbefa5f86f64747 Mon Sep 17 00:00:00 2001
 From: Tawheed Makhdoomi <_@tawheed.cc>
 Date: Thu, 12 Nov 2026 11:16:54 -0500
-Subject: [PATCH 02/18] HID: spi-hid: drop old out-of-tree spi-hid copy (to be
+Subject: [PATCH 02/41] HID: spi-hid: drop old out-of-tree spi-hid copy (to be
  replaced by upstream v7)
 
 ---
@@ -22,7 +22,7 @@ Subject: [PATCH 02/18] HID: spi-hid: drop old out-of-tree spi-hid copy (to be
  delete mode 100644 drivers/hid/spi-hid/trace.c
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 3edca7b68..77b13fe49 100644
+index 3edca7b68f..77b13fe49b 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
 @@ -1545,7 +1545,6 @@ source "drivers/hid/bpf/Kconfig"
@@ -34,7 +34,7 @@ index 3edca7b68..77b13fe49 100644
  source "drivers/hid/intel-ish-hid/Kconfig"
  
 diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 4e87530ec..43a8eb0f3 100644
+index 4e87530ec4..43a8eb0f38 100644
 --- a/drivers/hid/Makefile
 +++ b/drivers/hid/Makefile
 @@ -177,7 +177,6 @@ obj-$(CONFIG_USB_MOUSE)		+= usbhid/
@@ -47,7 +47,7 @@ index 4e87530ec..43a8eb0f3 100644
  
 diff --git a/drivers/hid/spi-hid/Kconfig b/drivers/hid/spi-hid/Kconfig
 deleted file mode 100644
-index acc4e2f19..000000000
+index acc4e2f196..0000000000
 --- a/drivers/hid/spi-hid/Kconfig
 +++ /dev/null
 @@ -1,19 +0,0 @@
@@ -72,7 +72,7 @@ index acc4e2f19..000000000
 -	  will be called spi-hid.
 diff --git a/drivers/hid/spi-hid/Makefile b/drivers/hid/spi-hid/Makefile
 deleted file mode 100644
-index a605c95e4..000000000
+index a605c95e46..0000000000
 --- a/drivers/hid/spi-hid/Makefile
 +++ /dev/null
 @@ -1,12 +0,0 @@
@@ -90,7 +90,7 @@ index a605c95e4..000000000
 -spi-hid-objs := spi-hid-core.o trace.o
 diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
 deleted file mode 100755
-index 38e21327c..000000000
+index 38e21327cd..0000000000
 --- a/drivers/hid/spi-hid/spi-hid-core.c
 +++ /dev/null
 @@ -1,1553 +0,0 @@
@@ -1649,7 +1649,7 @@ index 38e21327c..000000000
 -MODULE_LICENSE("GPL");
 diff --git a/drivers/hid/spi-hid/spi-hid-core.h b/drivers/hid/spi-hid/spi-hid-core.h
 deleted file mode 100755
-index d4af45fce..000000000
+index d4af45fce7..0000000000
 --- a/drivers/hid/spi-hid/spi-hid-core.h
 +++ /dev/null
 @@ -1,257 +0,0 @@
@@ -1912,7 +1912,7 @@ index d4af45fce..000000000
 -#endif
 diff --git a/drivers/hid/spi-hid/spi-hid_trace.h b/drivers/hid/spi-hid/spi-hid_trace.h
 deleted file mode 100755
-index 2092205b9..000000000
+index 2092205b97..0000000000
 --- a/drivers/hid/spi-hid/spi-hid_trace.h
 +++ /dev/null
 @@ -1,200 +0,0 @@
@@ -2118,7 +2118,7 @@ index 2092205b9..000000000
 -#include <trace/define_trace.h>
 diff --git a/drivers/hid/spi-hid/trace.c b/drivers/hid/spi-hid/trace.c
 deleted file mode 100644
-index 7c8e42350..000000000
+index 7c8e423505..0000000000
 --- a/drivers/hid/spi-hid/trace.c
 +++ /dev/null
 @@ -1,11 +0,0 @@
@@ -2133,6 +2133,3 @@ index 7c8e42350..000000000
 -
 -#define CREATE_TRACE_POINTS
 -#include "spi-hid_trace.h"
--- 
-2.43.0
-

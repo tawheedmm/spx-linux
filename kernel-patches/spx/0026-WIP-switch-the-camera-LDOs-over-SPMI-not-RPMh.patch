@@ -1,0 +1,106 @@
+From 7003854e28a58156fea32c684bce97c8d00d58fd Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 00:20:16 -0500
+Subject: [PATCH 26/41] WIP: switch the camera LDOs over SPMI, not RPMh
+
+On the Surface Pro X firmware, cmd-db lists ldoa1/ldoa14/ldoa17 with
+their raw SPMI address (SID 1, 0x4000/0x4d00/0x5000) instead of an RPMh
+VRM address: RPMh does not manage them and never acknowledges votes, so
+the OS has to switch them directly. Register them through
+qcom_spmi-regulator (new qcom,pmc8180-regulators table listing only these
+LDOs) and take the front/IR DOVDD (L14A, 1.8 V, already preset by
+firmware) from there.
+
+---
+ .../qcom/sc8180x-microsoft-surface-pro-x.dtsi | 20 +++++++++++++++++++
+ arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi   |  2 +-
+ drivers/regulator/qcom_spmi-regulator.c       | 14 +++++++++++++
+ 3 files changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index d4b2446f4d..980f90aa1a 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -509,6 +509,8 @@ camera@36 {
+ 
+ 		orientation = <MEDIA_ORIENTATION_FRONT>;
+ 
++		dovdd-supply = <&vreg_l14a_1p8>;
++
+ 		port {
+ 			cam_front_ep: endpoint {
+ 				data-lanes = <1 2>;
+@@ -540,6 +542,8 @@ camera@60 {
+ 
+ 		orientation = <MEDIA_ORIENTATION_FRONT>;
+ 
++		vdddo-supply = <&vreg_l14a_1p8>;
++
+ 		port {
+ 			cam_ir_ep: endpoint {
+ 				data-lanes = <1>;
+@@ -1129,3 +1133,19 @@ &wifi {
+ 
+ 	status = "okay";
+ };
++
++&pmc8180_1 {
++	regulators {
++		compatible = "qcom,pmc8180-regulators";
++
++		/*
++		 * Camera DOVDD (front + IR). Not an RPMh resource on this
++		 * firmware: switched directly over SPMI, like Windows does.
++		 */
++		vreg_l14a_1p8: l14 {
++			regulator-name = "vreg_l14a_1p8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi
+index 1efea5c610..2c76eccb92 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-pmics.dtsi
+@@ -150,7 +150,7 @@ pmc8180_1_gpios: gpio@c000 {
+ 		};
+ 	};
+ 
+-	pmic@1 {
++	pmc8180_1: pmic@1 {
+ 		compatible = "qcom,pmc8180", "qcom,spmi-pmic";
+ 		reg = <0x1 SPMI_USID>;
+ 		#address-cells = <1>;
+diff --git a/drivers/regulator/qcom_spmi-regulator.c b/drivers/regulator/qcom_spmi-regulator.c
+index 5624a93f0e..f1a4fb2ca5 100644
+--- a/drivers/regulator/qcom_spmi-regulator.c
++++ b/drivers/regulator/qcom_spmi-regulator.c
+@@ -2059,6 +2059,19 @@ static const struct spmi_regulator_data pm6125_regulators[] = {
+ 	{ "l24", 0x5700, "vdd_l23_l24" },
+ };
+ 
++/*
++ * PMC8180 (PM8150 family, SID 1): RPMh manages most of its regulators, but the
++ * SC8180X firmware hands a few LDOs to the OS for direct SPMI control (their
++ * cmd-db entries carry the raw SPMI address instead of an RPMh VRM address).
++ * Only list those, so this driver never touches RPMh-owned rails.
++ */
++static const struct spmi_regulator_data pmc8180_regulators[] = {
++	{ "l1", 0x4000, "vdd_l1_l8_l11", },
++	{ "l14", 0x4d00, "vdd_l7_l12_l14_l15", },
++	{ "l17", 0x5000, "vdd_l13_l16_l17", },
++	{ }
++};
++
+ static const struct spmi_regulator_data pm660_regulators[] = {
+ 	{ "s1", 0x1400, "vdd_s1", },
+ 	{ "s2", 0x1700, "vdd_s2", },
+@@ -2481,6 +2494,7 @@ static const struct spmi_regulator_data pms405_regulators[] = {
+ static const struct of_device_id qcom_spmi_regulator_match[] = {
+ 	{ .compatible = "qcom,pm6125-regulators", .data = &pm6125_regulators },
+ 	{ .compatible = "qcom,pm660-regulators", .data = &pm660_regulators },
++	{ .compatible = "qcom,pmc8180-regulators", .data = &pmc8180_regulators },
+ 	{ .compatible = "qcom,pm660l-regulators", .data = &pm660l_regulators },
+ 	{ .compatible = "qcom,pm8004-regulators", .data = &pm8004_regulators },
+ 	{ .compatible = "qcom,pm8005-regulators", .data = &pm8005_regulators },

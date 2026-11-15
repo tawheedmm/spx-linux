@@ -1,7 +1,7 @@
-From cbafc4e3b44c5f5e428ab0855cd8fa12749f1fb9 Mon Sep 17 00:00:00 2001
+From fed064716b03abedbddbba9632708a4eb843532c Mon Sep 17 00:00:00 2001
 From: Jingyuan Liang <jingyliang@chromium.org>
 Date: Sat, 24 Oct 2026 00:51:40 +0000
-Subject: [PATCH 08/18] HID: spi-hid: add spi_hid traces
+Subject: [PATCH 08/41] HID: spi-hid: add spi_hid traces
 
 Add traces for the purpose of debugging spi_hid driver.
 
@@ -19,7 +19,7 @@ Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
  create mode 100644 drivers/hid/spi-hid/spi-hid-trace.h
 
 diff --git a/drivers/hid/spi-hid/Makefile b/drivers/hid/spi-hid/Makefile
-index 92e24cddb..733e006df 100644
+index 92e24cddbf..733e006df5 100644
 --- a/drivers/hid/spi-hid/Makefile
 +++ b/drivers/hid/spi-hid/Makefile
 @@ -7,3 +7,4 @@
@@ -28,7 +28,7 @@ index 92e24cddb..733e006df 100644
  spi-hid-objs 			= spi-hid-core.o
 +CFLAGS_spi-hid-core.o 		:= -I$(src)
 diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
-index cd4d76384..f30892a4f 100644
+index cd4d763840..f30892a4f9 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.c
 +++ b/drivers/hid/spi-hid/spi-hid-core.c
 @@ -44,6 +44,11 @@
@@ -271,7 +271,7 @@ index cd4d76384..f30892a4f 100644
  				 shid->input_message.status);
 diff --git a/drivers/hid/spi-hid/spi-hid-core.h b/drivers/hid/spi-hid/spi-hid-core.h
 new file mode 100644
-index 000000000..e66594b7a
+index 0000000000..e66594b7a8
 --- /dev/null
 +++ b/drivers/hid/spi-hid/spi-hid-core.h
 @@ -0,0 +1,103 @@
@@ -380,7 +380,7 @@ index 000000000..e66594b7a
 +#endif /* SPI_HID_CORE_H */
 diff --git a/drivers/hid/spi-hid/spi-hid-trace.h b/drivers/hid/spi-hid/spi-hid-trace.h
 new file mode 100644
-index 000000000..a36e07b95
+index 0000000000..a36e07b950
 --- /dev/null
 +++ b/drivers/hid/spi-hid/spi-hid-trace.h
 @@ -0,0 +1,184 @@
@@ -568,6 +568,3 @@ index 000000000..a36e07b95
 + */
 +#define TRACE_INCLUDE_FILE spi-hid-trace
 +#include <trace/define_trace.h>
--- 
-2.43.0
-

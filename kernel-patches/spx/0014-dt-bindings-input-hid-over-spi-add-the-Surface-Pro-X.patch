@@ -1,7 +1,7 @@
-From 31524f3a75570ba5cd2d0902a33739f238b44fc2 Mon Sep 17 00:00:00 2001
+From 00f4611f5d75d51e8ba4449a4908fde21d4e3b31 Mon Sep 17 00:00:00 2001
 From: Tawheed Makhdoomi <_@tawheed.cc>
 Date: Thu, 12 Nov 2026 11:59:38 -0500
-Subject: [PATCH 14/18] dt-bindings: input: hid-over-spi: add the Surface Pro X
+Subject: [PATCH 14/41] dt-bindings: input: hid-over-spi: add the Surface Pro X
  touch digitizer
 
 The touch and pen digitizer of the Microsoft Surface Pro X (vendor 0x045e,
@@ -20,7 +20,7 @@ Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
  1 file changed, 1 insertion(+)
 
 diff --git a/Documentation/devicetree/bindings/input/hid-over-spi.yaml b/Documentation/devicetree/bindings/input/hid-over-spi.yaml
-index bed0746f0..beb7e0922 100644
+index bed0746f00..beb7e0922f 100644
 --- a/Documentation/devicetree/bindings/input/hid-over-spi.yaml
 +++ b/Documentation/devicetree/bindings/input/hid-over-spi.yaml
 @@ -27,6 +27,7 @@ properties:
@@ -31,6 +31,3 @@ index bed0746f0..beb7e0922 100644
  
    reg:
      maxItems: 1
--- 
-2.43.0
-

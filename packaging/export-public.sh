@@ -33,7 +33,7 @@ cp "$SRC/packaging/public/LICENSES.md" "$DEST/LICENSES.md"
 cp "$SRC/packaging/public/gitignore" "$DEST/.gitignore"
 mkdir -p "$DEST/docs"; cp "$SRC/packaging/public/ROADMAP.md" "$DEST/docs/ROADMAP.md"
 # kernel-patches/README.md: drop references to files that are not exported (test DTB diff, audio WIP)
-sed -i -e '/uncommitted-test-dtb-variants/d' -e '/(with the diff)/d' -e '/audio work in progress/d' -e '/audio-wip/d' "$DEST/kernel-patches/README.md"
+[ -f "$DEST/kernel-patches/README.md" ] && sed -i -e '/uncommitted-test-dtb-variants/d' -e '/(with the diff)/d' -e '/audio work in progress/d' -e '/audio-wip/d' "$DEST/kernel-patches/README.md"
 cp "$SRC/packaging/public/CONTRIBUTING.md" "$DEST/CONTRIBUTING.md"
 # packaging/README.md: the internal "Rules" section becomes a pointer to CONTRIBUTING.md
 sed -i -e '/^## Rules that apply to everything in here/,$d' "$DEST/packaging/README.md"

@@ -1,0 +1,274 @@
+From 135a4becefa1bdf8c204790e1ce4df200d412dc6 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Thu, 12 Nov 2026 15:54:01 -0500
+Subject: [PATCH 23/41] arm64: dts: qcom: sc8180x-microsoft-surface-pro-x:
+ Describe the cameras
+
+Describe the three camera sensors of the Surface Pro X. From the Windows
+DSDT (PEP power sequences of \_SB.CAMS/CAMF/CAMI and their SCFG methods):
+
+  rear  OV13858 @0x10: MCLK0 19.2 MHz, reset GPIO22, L14A 1.8 V, L17A 2.85 V,
+                       L1A 1.2 V
+  front OV5693  @0x36: MCLK2 19.2 MHz, reset GPIO12, L14A 1.8 V
+  IR    OV7251  @0x60: MCLK3 19.2 MHz, enable GPIO23, L14A 1.8 V
+
+L1A, L14A and L17A are voted only by the camera devices in the DSDT.
+
+The ACPI tables do not say which CCI master or CSIPHY each sensor uses. The
+nodes follow the Qualcomm SM8150 MTP reference slots for MCLK0/2/3 (rear on
+CCI0 master 0 + CSIPHY0, front on CCI0 master 1 + CSIPHY2, IR on CCI1 master
+1 + CSIPHY3). This is a guess, to be checked on hardware.
+
+The rear module's DW9800 VCM and the M24C64 EEPROMs are not described yet.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ .../qcom/sc8180x-microsoft-surface-pro-x.dtsi | 207 ++++++++++++++++++
+ 1 file changed, 207 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index 160a53c4d3..3fb64b80ab 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -14,6 +14,7 @@
+ #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+ #include <dt-bindings/spmi/spmi.h>
+ #include <dt-bindings/iio/qcom,spmi-vadc.h>
++#include <dt-bindings/media/video-interface-devices.h>
+ #include "sc8180x.dtsi"
+ #include "sc8180x-pmics.dtsi"
+ 
+@@ -297,6 +298,13 @@ vreg_s5a_2p04: smps5 {
+ 			regulator-max-microvolt = <2040000>;
+ 		};
+ 
++		/* Rear camera DVDD (ACPI PEP: CAMS only) */
++		vreg_l1a_1p2: ldo1 {
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1200000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
+ 		vreg_l7a_1p8: ldo7 {
+ 			regulator-min-microvolt = <1800000>;
+ 			regulator-max-microvolt = <1800000>;
+@@ -314,6 +322,20 @@ vreg_l12a_1p8: ldo12 {
+ 			regulator-max-microvolt = <1800000>;
+ 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+ 		};
++
++		/* Camera DOVDD for all three sensors (ACPI PEP: CAMS/CAMF/CAMI only) */
++		vreg_l14a_1p8: ldo14 {
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		/* Rear camera AVDD (ACPI PEP: CAMS only) */
++		vreg_l17a_2p85: ldo17 {
++			regulator-min-microvolt = <2850000>;
++			regulator-max-microvolt = <2850000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
+ 	};
+ 
+ 	pmc8180-e-rpmh-regulators {
+@@ -436,6 +458,149 @@ vreg_bob: bob {
+ 	};
+ };
+ 
++/*
++ * Cameras. From the Windows DSDT (PEP power sequences for \_SB.CAMS/CAMF/CAMI
++ * and the SCFG methods): rear OV13858 at 0x10 (MCLK0, reset GPIO22, L14A +
++ * L17A + L1A), front OV5693 at 0x36 (MCLK2, reset GPIO12, L14A), IR OV7251 at
++ * 0x60 (MCLK3, enable GPIO23, L14A), all with a 19.2 MHz MCLK.
++ *
++ * NOT in the DSDT and therefore GUESSED: which CCI bus/master each sensor is
++ * on and which CSIPHY each one uses. The guess follows Qualcomm's SM8150 MTP
++ * reference slots for MCLK0/2/3: rear CSIPHY0 on CCI0/i2c0, front CSIPHY2 on
++ * CCI0/i2c1, IR CSIPHY3 on CCI1/i2c1. Move the nodes if probing finds them
++ * elsewhere.
++ * The CSIPHY vdda-phy/vdda-pll rails are not voted by Windows either and are
++ * left out (dummy regulators).
++ */
++&camss {
++	status = "okay";
++
++	ports {
++		port@0 {
++			csiphy0_ep: endpoint@0 {
++				reg = <0>;
++				clock-lanes = <7>;
++				data-lanes = <0 1 2 3>;
++				remote-endpoint = <&cam_rear_ep>;
++			};
++		};
++
++		port@2 {
++			csiphy2_ep: endpoint@0 {
++				reg = <0>;
++				clock-lanes = <7>;
++				data-lanes = <0 1>;
++				remote-endpoint = <&cam_front_ep>;
++			};
++		};
++
++		port@3 {
++			csiphy3_ep: endpoint@0 {
++				reg = <0>;
++				clock-lanes = <7>;
++				data-lanes = <0>;
++				remote-endpoint = <&cam_ir_ep>;
++			};
++		};
++	};
++};
++
++&cci0 {
++	status = "okay";
++};
++
++&cci0_i2c0 {
++	/* Rear camera module also has a DW9800 VCM and an M24C64 EEPROM (not described) */
++	camera@10 {
++		compatible = "ovti,ov13858";
++		reg = <0x10>;
++
++		clocks = <&camcc CAM_CC_MCLK0_CLK>;
++		assigned-clocks = <&camcc CAM_CC_MCLK0_CLK>;
++		assigned-clock-rates = <19200000>;
++
++		reset-gpios = <&tlmm 22 GPIO_ACTIVE_LOW>;
++		pinctrl-0 = <&cam_mclk0_default>, <&cam_rear_default>;
++		pinctrl-names = "default";
++
++		dovdd-supply = <&vreg_l14a_1p8>;
++		avdd-supply = <&vreg_l17a_2p85>;
++		dvdd-supply = <&vreg_l1a_1p2>;
++
++		orientation = <MEDIA_ORIENTATION_BACK>;
++
++		port {
++			cam_rear_ep: endpoint {
++				data-lanes = <1 2 3 4>;
++				link-frequencies = /bits/ 64 <540000000 270000000>;
++				remote-endpoint = <&csiphy0_ep>;
++			};
++		};
++	};
++};
++
++&cci0_i2c1 {
++	/* Front camera module also has an M24C64 EEPROM (not described) */
++	camera@36 {
++		compatible = "ovti,ov5693";
++		reg = <0x36>;
++
++		clocks = <&camcc CAM_CC_MCLK2_CLK>;
++		clock-names = "xvclk";
++		assigned-clocks = <&camcc CAM_CC_MCLK2_CLK>;
++		assigned-clock-rates = <19200000>;
++
++		reset-gpios = <&tlmm 12 GPIO_ACTIVE_LOW>;
++		pinctrl-0 = <&cam_mclk2_default>, <&cam_front_default>;
++		pinctrl-names = "default";
++
++		/* Only DOVDD is switched by Windows; AVDD/DVDD come from elsewhere */
++		dovdd-supply = <&vreg_l14a_1p8>;
++
++		orientation = <MEDIA_ORIENTATION_FRONT>;
++
++		port {
++			cam_front_ep: endpoint {
++				data-lanes = <1 2>;
++				link-frequencies = /bits/ 64 <419200000>;
++				remote-endpoint = <&csiphy2_ep>;
++			};
++		};
++	};
++};
++
++&cci1 {
++	status = "okay";
++};
++
++&cci1_i2c1 {
++	camera@60 {
++		compatible = "ovti,ov7251";
++		reg = <0x60>;
++
++		clocks = <&camcc CAM_CC_MCLK3_CLK>;
++		assigned-clocks = <&camcc CAM_CC_MCLK3_CLK>;
++		assigned-clock-rates = <19200000>;
++
++		enable-gpios = <&tlmm 23 GPIO_ACTIVE_HIGH>;
++		pinctrl-0 = <&cam_mclk3_default>, <&cam_ir_default>;
++		pinctrl-names = "default";
++
++		/* Only DOVDD is switched by Windows; AVDD/DVDD come from elsewhere */
++		vdddo-supply = <&vreg_l14a_1p8>;
++
++		orientation = <MEDIA_ORIENTATION_FRONT>;
++
++		port {
++			cam_ir_ep: endpoint {
++				data-lanes = <1>;
++				link-frequencies = /bits/ 64 <240000000 319200000>;
++				remote-endpoint = <&csiphy3_ep>;
++			};
++		};
++	};
++};
++
+ &dispcc {
+ 	status = "okay";
+ };
+@@ -457,6 +622,48 @@ &smb2351_a {
+ &tlmm {
+ 	gpio-reserved-ranges = <0 4>, <47 4>;
+ 
++	cam_front_default: cam-front-default-state {
++		pins = "gpio12";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
++	cam_ir_default: cam-ir-default-state {
++		pins = "gpio23";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
++	cam_mclk0_default: cam-mclk0-default-state {
++		pins = "gpio13";
++		function = "cam_mclk";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
++	cam_mclk2_default: cam-mclk2-default-state {
++		pins = "gpio15";
++		function = "cam_mclk";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
++	cam_mclk3_default: cam-mclk3-default-state {
++		pins = "gpio16";
++		function = "cam_mclk";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
++	cam_rear_default: cam-rear-default-state {
++		pins = "gpio22";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
+ 	lid_default: lid-default-state {
+ 		pins = "gpio121";
+ 		function = "gpio";

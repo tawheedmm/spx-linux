@@ -1,0 +1,133 @@
+From 02220d472e6781f697dabef856b5d1cd8ad8da0b Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Sat, 14 Nov 2026 12:42:47 -0500
+Subject: [PATCH 39/41] HID: spi-hid: retry the reset when the device does not
+ answer it
+
+The device announces its reset response with a single interrupt edge.
+If it does not come, because the device missed the reset or the edge
+was lost, nothing ever retries: the driver stays bound without a HID
+device until it is rebound. The resume path already waits for the
+response, but probe and error recovery do not.
+
+Arm a delayed work after each reset that expects a response and, if
+the response has not arrived after SPI_HID_RESET_TIMEOUT, go through
+the error handler, which resets the device again and gives up after
+SPI_HID_MAX_RESET_ATTEMPTS.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ drivers/hid/spi-hid/spi-hid-core.c | 37 ++++++++++++++++++++++++++++++
+ drivers/hid/spi-hid/spi-hid-core.h |  2 ++
+ 2 files changed, 39 insertions(+)
+
+diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
+index a1a69ff6f0..e09e169db5 100644
+--- a/drivers/hid/spi-hid/spi-hid-core.c
++++ b/drivers/hid/spi-hid/spi-hid-core.c
+@@ -432,6 +432,32 @@ static int spi_hid_wait_for_reset(struct spi_hid *shid)
+ 	return 0;
+ }
+ 
++/*
++ * The reset response is announced by a single interrupt edge. If the device
++ * misses the reset, or the edge is lost, nothing else would ever retry and the
++ * device would stay without a HID device until the driver is rebound. Arm this
++ * after each reset that expects a response.
++ */
++static void spi_hid_arm_reset_timeout(struct spi_hid *shid)
++{
++	mod_delayed_work(system_wq, &shid->reset_timeout_work,
++			 msecs_to_jiffies(SPI_HID_RESET_TIMEOUT));
++}
++
++static void spi_hid_reset_timeout_work(struct work_struct *work)
++{
++	struct spi_hid *shid = container_of(to_delayed_work(work), struct spi_hid,
++					    reset_timeout_work);
++
++	if (!test_bit(SPI_HID_RESET_PENDING, &shid->flags) ||
++	    test_bit(SPI_HID_DEAD, &shid->flags))
++		return;
++
++	dev_warn(&shid->spi->dev, "No reset response, resetting again\n");
++	set_bit(SPI_HID_ERROR, &shid->flags);
++	schedule_work(&shid->reset_work);
++}
++
+ static int spi_hid_suspend(struct spi_hid *shid)
+ {
+ 	int error;
+@@ -442,6 +468,8 @@ static int spi_hid_suspend(struct spi_hid *shid)
+ 	 * IRQ stays on so a request in flight gets its response.
+ 	 */
+ 	disable_work_sync(&shid->reset_work);
++	/* Only reset_work, probe and resume arm it, so it stays off now. */
++	cancel_delayed_work_sync(&shid->reset_timeout_work);
+ 
+ 	/* HID driver suspend may talk to the device; responses need the IRQ. */
+ 	scoped_guard(mutex, &shid->power_lock) {
+@@ -527,6 +555,9 @@ static int spi_hid_resume(struct spi_hid *shid)
+ 			was_reset = true;
+ 	}
+ 
++	if (was_reset)
++		spi_hid_arm_reset_timeout(shid);
++
+ 	enable_irq(shid->spi->irq);
+ 
+ 	/*
+@@ -632,6 +663,8 @@ static void spi_hid_error_handler(struct spi_hid *shid)
+ 		 */
+ 		set_bit(SPI_HID_ERROR, &shid->flags);
+ 		schedule_work(&shid->reset_work);
++	} else {
++		spi_hid_arm_reset_timeout(shid);
+ 	}
+ 
+ 	/* Balance disable_irq() above; a retry disables it again. */
+@@ -1196,6 +1229,7 @@ static int spi_hid_process_input_report(struct spi_hid *shid,
+ 		return spi_hid_input_report_handler(shid, buf);
+ 	case RESET_RESPONSE:
+ 		clear_bit(SPI_HID_RESET_PENDING, &shid->flags);
++		cancel_delayed_work(&shid->reset_timeout_work);
+ 		set_bit(SPI_HID_RESET_RESPONSE, &shid->flags);
+ 		schedule_work(&shid->reset_work);
+ 		break;
+@@ -1735,6 +1769,7 @@ static int spi_hid_dev_init(struct spi_hid *shid)
+ 	}
+ 
+ 	enable_irq(spi->irq);
++	spi_hid_arm_reset_timeout(shid);
+ 
+ 	return 0;
+ }
+@@ -1835,6 +1870,7 @@ int spi_hid_core_probe(struct spi_device *spi, struct spihid_ops *ops,
+ 	init_completion(&shid->reset_done);
+ 
+ 	INIT_WORK(&shid->reset_work, spi_hid_reset_work);
++	INIT_DELAYED_WORK(&shid->reset_timeout_work, spi_hid_reset_timeout_work);
+ 	INIT_WORK(&shid->panel_follower_work, spi_hid_panel_follower_work);
+ 
+ 	/*
+@@ -1903,6 +1939,7 @@ void spi_hid_core_remove(struct spi_device *spi)
+ 	 */
+ 	disable_irq(spi->irq);
+ 	disable_work_sync(&shid->reset_work);
++	cancel_delayed_work_sync(&shid->reset_timeout_work);
+ 
+ 	spi_hid_stop_hid(shid);
+ 
+diff --git a/drivers/hid/spi-hid/spi-hid-core.h b/drivers/hid/spi-hid/spi-hid-core.h
+index 2f7214b083..0d52490fb0 100644
+--- a/drivers/hid/spi-hid/spi-hid-core.h
++++ b/drivers/hid/spi-hid/spi-hid-core.h
+@@ -80,6 +80,8 @@ struct spi_hid {
+ 	unsigned long flags;	/* device flags. */
+ 
+ 	struct work_struct reset_work;
++	/* Retries a reset when the device does not answer it. */
++	struct delayed_work reset_timeout_work;
+ 	struct work_struct panel_follower_work;
+ 
+ 	/*

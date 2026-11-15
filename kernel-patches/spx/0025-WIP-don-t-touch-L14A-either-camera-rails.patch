@@ -1,0 +1,46 @@
+From 12d838fc81d165106899929f2e6f63e45142e090 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Thu, 12 Nov 2026 19:59:29 -0500
+Subject: [PATCH 25/41] WIP: don't touch L14A either (camera rails)
+
+Setting the mode of L14A also times out in RPMh (AOSS does not
+respond), failing pmc8180-a and with it Wi-Fi (L9A) and the USB PHYs
+(L12A). Windows leaves the front/IR rails on; rely on that for now and
+let the sensors fall back to dummy supplies.
+
+---
+ .../boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi     | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index 662c66703e..d4b2446f4d 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -319,11 +319,6 @@ vreg_l12a_1p8: ldo12 {
+ 		};
+ 
+ 		/* Camera DOVDD for all three sensors (ACPI PEP: CAMS/CAMF/CAMI only) */
+-		vreg_l14a_1p8: ldo14 {
+-			regulator-min-microvolt = <1800000>;
+-			regulator-max-microvolt = <1800000>;
+-			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+-		};
+ 
+ 		/* Rear camera AVDD (ACPI PEP: CAMS only) */
+ 	};
+@@ -511,7 +506,6 @@ camera@36 {
+ 		pinctrl-names = "default";
+ 
+ 		/* Only DOVDD is switched by Windows; AVDD/DVDD come from elsewhere */
+-		dovdd-supply = <&vreg_l14a_1p8>;
+ 
+ 		orientation = <MEDIA_ORIENTATION_FRONT>;
+ 
+@@ -543,7 +537,6 @@ camera@60 {
+ 		pinctrl-names = "default";
+ 
+ 		/* Only DOVDD is switched by Windows; AVDD/DVDD come from elsewhere */
+-		vdddo-supply = <&vreg_l14a_1p8>;
+ 
+ 		orientation = <MEDIA_ORIENTATION_FRONT>;
+ 

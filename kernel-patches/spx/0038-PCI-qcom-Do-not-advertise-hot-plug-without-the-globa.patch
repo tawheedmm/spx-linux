@@ -1,0 +1,76 @@
+From 76fe741961534a539b7fc26e914607394db849e7 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Sat, 14 Nov 2026 02:03:17 -0500
+Subject: [PATCH 38/41] PCI: qcom: Do not advertise hot-plug without the global
+ interrupt
+
+The Root Port's Slot Capabilities advertise Hot-Plug Capable. The driver
+can only emulate hot-plug through the link up/down events delivered by
+the "global" interrupt. On boards that do not describe that interrupt
+(the Surface Pro X drops it because it never fires for the NVMe), the
+port still claims hot-plug.
+
+With CONFIG_HOTPLUG_PCI_PCIE disabled, pci_bridge_d3_possible() refuses
+D3 for a hot-plug port that is not handled natively, so the Root Port
+stays in D0 across system suspend. pci_host_common_d3cold_possible()
+then reports that D3cold is not possible, dw_pcie_suspend_noirq()
+returns early and the controller, its PHY and all PCIe clocks stay on in
+s2idle:
+
+  pcieport 0002:00:00.0: blocks D3cold: state D0, may_wakeup 1
+
+Clear Hot-Plug Capable when there is no global interrupt.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ drivers/pci/controller/dwc/pcie-qcom.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/drivers/pci/controller/dwc/pcie-qcom.c b/drivers/pci/controller/dwc/pcie-qcom.c
+index 9da2e02ebc..6bd004c44d 100644
+--- a/drivers/pci/controller/dwc/pcie-qcom.c
++++ b/drivers/pci/controller/dwc/pcie-qcom.c
+@@ -338,6 +338,7 @@ struct qcom_pcie {
+ 	struct list_head ports;
+ 	struct gpio_desc *reset;
+ 	int global_irq;
++	bool no_hotplug;
+ 	bool use_pm_opp;
+ 	struct mutex reset_lock;
+ };
+@@ -410,6 +411,7 @@ static void qcom_pcie_clear_aspm_l0s(struct dw_pcie *pci)
+ 
+ static void qcom_pcie_set_slot_cap(struct dw_pcie *pci)
+ {
++	struct qcom_pcie *pcie = to_qcom_pcie(pci);
+ 	u16 offset = dw_pcie_find_capability(pci, PCI_CAP_ID_EXP);
+ 	u32 val;
+ 
+@@ -428,6 +430,18 @@ static void qcom_pcie_set_slot_cap(struct dw_pcie *pci)
+ 	 * Attention Button Present in Slot Capabilities.
+ 	 */
+ 	val &= ~PCI_EXP_SLTCAP_ABP;
++
++	/*
++	 * Hot-plug is only emulated through the link events of the "global"
++	 * interrupt. Without that interrupt the Root Port cannot report any
++	 * hot-plug event, so do not advertise the capability: a port that
++	 * claims it without a native hot-plug driver is kept in D0 by
++	 * pci_bridge_d3_possible(), which in turn keeps the host bridge out
++	 * of D3cold during system suspend.
++	 */
++	if (pcie->no_hotplug)
++		val &= ~PCI_EXP_SLTCAP_HPC;
++
+ 	writel(val, pci->dbi_base + offset + PCI_EXP_SLTCAP);
+ 
+ 	dw_pcie_dbi_ro_wr_dis(pci);
+@@ -2455,6 +2469,8 @@ static int qcom_pcie_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, pcie);
+ 
++	pcie->no_hotplug = platform_get_irq_byname_optional(pdev, "global") <= 0;
++
+ 	ret = dw_pcie_host_init(pp);
+ 	if (ret) {
+ 		dev_err_probe(dev, ret, "cannot initialize host\n");

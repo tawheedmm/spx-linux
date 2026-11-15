@@ -1,7 +1,7 @@
-From 02a7a531e46a8d6c474f184ef152bfa33fe07f87 Mon Sep 17 00:00:00 2001
+From ed416d0f9bb2e5c68787e5b5a4b1e14e49517411 Mon Sep 17 00:00:00 2001
 From: Jarrett Schultz <jaschultz@microsoft.com>
 Date: Sat, 24 Oct 2026 00:51:35 +0000
-Subject: [PATCH 03/18] Documentation: Correction in HID output_report callback
+Subject: [PATCH 03/41] Documentation: Correction in HID output_report callback
  description.
 
 Originally output_report callback was described as must-be asynchronous,
@@ -16,7 +16,7 @@ Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/Documentation/hid/hid-transport.rst b/Documentation/hid/hid-transport.rst
-index 6f1692da2..2008cf432 100644
+index 6f1692da29..2008cf432a 100644
 --- a/Documentation/hid/hid-transport.rst
 +++ b/Documentation/hid/hid-transport.rst
 @@ -327,8 +327,8 @@ The available HID callbacks are:
@@ -30,6 +30,3 @@ index 6f1692da2..2008cf432 100644
  
     ::
  
--- 
-2.43.0
-

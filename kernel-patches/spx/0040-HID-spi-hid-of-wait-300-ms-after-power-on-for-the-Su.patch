@@ -1,0 +1,41 @@
+From 6280fd1cc81695a7b8eab463f5c6a478feca5868 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Sat, 14 Nov 2026 13:45:04 -0500
+Subject: [PATCH 40/41] HID: spi-hid-of: wait 300 ms after power on for the
+ Surface Pro X digitizer
+
+The digitizer is powered from a GPIO-switched 5 V rail that is off when
+the driver probes. With the 10 ms post power on delay of the g6 data,
+the digitizer misses the reset in about one boot out of seven: the
+interrupt line never moves after reset is released, no reset response
+arrives and the driver stays bound without a HID device. Measured on
+the device: 4 failures in 25 boots with 10 ms, none in 40 boots with
+300 ms; the reset response then comes 135 ms after reset release in
+every boot.
+
+The firmware does the same: the _PS0 method of the digitizer's ACPI
+device sleeps 300 ms before it drives the reset GPIO high.
+
+Signed-off-by: Tawheed Makhdoomi <_@tawheed.cc>
+---
+ drivers/hid/spi-hid/spi-hid-of.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hid/spi-hid/spi-hid-of.c b/drivers/hid/spi-hid/spi-hid-of.c
+index 429bf51ad9..dd9c2429bb 100644
+--- a/drivers/hid/spi-hid/spi-hid-of.c
++++ b/drivers/hid/spi-hid/spi-hid-of.c
+@@ -76,7 +76,12 @@ static const struct spi_hid_of_data microsoft_surface_pro_x_data = {
+ 		.write_opcode = 0x02,
+ 		.protocol = SPI_HID_PROTOCOL_V2,
+ 	},
+-	.post_power_on_delay_ms = 10,
++	/*
++	 * Released from reset 10 ms after power on, the digitizer stays silent
++	 * in about one boot out of seven. The ACPI tables of this machine wait
++	 * 300 ms after power on before releasing reset.
++	 */
++	.post_power_on_delay_ms = 300,
+ 	.minimal_reset_delay_ms = 100,
+ };
+ 

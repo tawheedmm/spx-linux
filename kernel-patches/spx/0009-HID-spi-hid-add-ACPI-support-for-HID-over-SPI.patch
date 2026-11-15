@@ -1,7 +1,7 @@
-From f93d39c6dab34d9fda09afe4b28285c4beed65ab Mon Sep 17 00:00:00 2001
+From b2d739cfdfdcb524af2fb63fb6392d1ab7fc123a Mon Sep 17 00:00:00 2001
 From: Angela Czubak <acz@semihalf.com>
 Date: Sat, 24 Oct 2026 00:51:41 +0000
-Subject: [PATCH 09/18] HID: spi-hid: add ACPI support for HID over SPI
+Subject: [PATCH 09/41] HID: spi-hid: add ACPI support for HID over SPI
 
 Detect SPI HID devices described in ACPI.
 
@@ -20,7 +20,7 @@ Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
  create mode 100644 drivers/hid/spi-hid/spi-hid.h
 
 diff --git a/drivers/hid/spi-hid/Kconfig b/drivers/hid/spi-hid/Kconfig
-index 836fdefe8..303ada03a 100644
+index 836fdefe83..303ada03a1 100644
 --- a/drivers/hid/spi-hid/Kconfig
 +++ b/drivers/hid/spi-hid/Kconfig
 @@ -10,6 +10,22 @@ menuconfig SPI_HID
@@ -47,7 +47,7 @@ index 836fdefe8..303ada03a 100644
  	tristate
  endif
 diff --git a/drivers/hid/spi-hid/Makefile b/drivers/hid/spi-hid/Makefile
-index 733e006df..3ca326602 100644
+index 733e006df5..3ca3266026 100644
 --- a/drivers/hid/spi-hid/Makefile
 +++ b/drivers/hid/spi-hid/Makefile
 @@ -8,3 +8,4 @@
@@ -57,7 +57,7 @@ index 733e006df..3ca326602 100644
 +obj-$(CONFIG_SPI_HID_ACPI)	+= spi-hid-acpi.o
 diff --git a/drivers/hid/spi-hid/spi-hid-acpi.c b/drivers/hid/spi-hid/spi-hid-acpi.c
 new file mode 100644
-index 000000000..df459c71e
+index 0000000000..df459c71e2
 --- /dev/null
 +++ b/drivers/hid/spi-hid/spi-hid-acpi.c
 @@ -0,0 +1,260 @@
@@ -322,7 +322,7 @@ index 000000000..df459c71e
 +MODULE_AUTHOR("Angela Czubak <aczubak@google.com>");
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
-index f30892a4f..4ff93d227 100644
+index f30892a4f9..4ff93d2271 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.c
 +++ b/drivers/hid/spi-hid/spi-hid-core.c
 @@ -44,6 +44,7 @@
@@ -402,7 +402,7 @@ index f30892a4f..4ff93d227 100644
  
 diff --git a/drivers/hid/spi-hid/spi-hid.h b/drivers/hid/spi-hid/spi-hid.h
 new file mode 100644
-index 000000000..a31956ef2
+index 0000000000..a31956ef24
 --- /dev/null
 +++ b/drivers/hid/spi-hid/spi-hid.h
 @@ -0,0 +1,43 @@
@@ -449,6 +449,3 @@ index 000000000..a31956ef2
 +void spi_hid_core_remove(struct spi_device *spi);
 +
 +#endif /* SPI_HID_H */
--- 
-2.43.0
-

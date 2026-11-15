@@ -1,7 +1,7 @@
-From f459da1c8afea5d13500c742c72e211a6c415724 Mon Sep 17 00:00:00 2001
+From 0eb0f2ba711ccf55e31f1d6af7b09256accd70fc Mon Sep 17 00:00:00 2001
 From: Jingyuan Liang <jingyliang@chromium.org>
 Date: Sat, 24 Oct 2026 00:51:38 +0000
-Subject: [PATCH 06/18] HID: spi-hid: add spi-hid driver HID layer
+Subject: [PATCH 06/41] HID: spi-hid: add spi-hid driver HID layer
 
 Add HID low level driver callbacks to register SPI as a HID driver, and
 an external touch device as a HID device.
@@ -15,7 +15,7 @@ Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
  1 file changed, 588 insertions(+)
 
 diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
-index 4991dc972..54c278ac8 100644
+index 4991dc972c..54c278ac88 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.c
 +++ b/drivers/hid/spi-hid/spi-hid-core.c
 @@ -20,13 +20,69 @@
@@ -663,6 +663,3 @@ index 4991dc972..54c278ac8 100644
  	shid->ops->assert_reset(shid->ops);
  	error = shid->ops->power_down(shid->ops);
  	if (error)
--- 
-2.43.0
-

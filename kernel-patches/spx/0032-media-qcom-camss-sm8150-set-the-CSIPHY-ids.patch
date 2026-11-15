@@ -1,0 +1,52 @@
+From 5b4b14079ff68f961ec029899b60bd97367aa768 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 10:33:52 -0500
+Subject: [PATCH 32/41] media: qcom: camss: sm8150: set the CSIPHY ids
+
+The SM8150 CSIPHY resources do not set .csiphy.id, so every PHY gets id
+0: all four entities are named msm_csiphy0 and only "csiphy0_timer"
+matches the timer-clock name, so CSIPHY1..3 keep their timer clock at
+19.2 MHz while the settle count is computed for 300 MHz. Sensors on
+those PHYs never sync (seen with the OV7251 on CSIPHY2 of the Surface
+Pro X).
+
+---
+ drivers/media/platform/qcom/camss/camss.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/media/platform/qcom/camss/camss.c b/drivers/media/platform/qcom/camss/camss.c
+index b1958429cc..15c9fd3edb 100644
+--- a/drivers/media/platform/qcom/camss/camss.c
++++ b/drivers/media/platform/qcom/camss/camss.c
+@@ -1971,6 +1971,7 @@ static const struct camss_subdev_resources csiphy_res_sm8150[] = {
+ 		.reg = { "csiphy0" },
+ 		.interrupt = { "csiphy0" },
+ 		.csiphy = {
++			.id = 0,
+ 			.hw_ops = &csiphy_ops_3ph_1_0,
+ 			.formats = &csiphy_formats_sdm845
+ 		}
+@@ -1984,6 +1985,7 @@ static const struct camss_subdev_resources csiphy_res_sm8150[] = {
+ 		.reg = { "csiphy1" },
+ 		.interrupt = { "csiphy1" },
+ 		.csiphy = {
++			.id = 1,
+ 			.hw_ops = &csiphy_ops_3ph_1_0,
+ 			.formats = &csiphy_formats_sdm845
+ 		}
+@@ -1997,6 +1999,7 @@ static const struct camss_subdev_resources csiphy_res_sm8150[] = {
+ 		.reg = { "csiphy2" },
+ 		.interrupt = { "csiphy2" },
+ 		.csiphy = {
++			.id = 2,
+ 			.hw_ops = &csiphy_ops_3ph_1_0,
+ 			.formats = &csiphy_formats_sdm845
+ 		}
+@@ -2010,6 +2013,7 @@ static const struct camss_subdev_resources csiphy_res_sm8150[] = {
+ 		.reg = { "csiphy3" },
+ 		.interrupt = { "csiphy3" },
+ 		.csiphy = {
++			.id = 3,
+ 			.hw_ops = &csiphy_ops_3ph_1_0,
+ 			.formats = &csiphy_formats_sdm845
+ 		}

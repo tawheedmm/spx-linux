@@ -1,0 +1,25 @@
+From 61d1203aa37377a524b062c9f58e47775050a90b Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Sun, 15 Nov 2026 08:10:46 -0500
+Subject: [PATCH 41/41] arm64: dts: qcom: drop the cambria test-variant DTB
+ entries
+
+The rmtfs and nomodem test device trees are not part of this series;
+remove their Makefile entries that came in with the camera work.
+---
+ arch/arm64/boot/dts/qcom/Makefile | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/Makefile b/arch/arm64/boot/dts/qcom/Makefile
+index fc03d827f3..84ba824ed7 100644
+--- a/arch/arm64/boot/dts/qcom/Makefile
++++ b/arch/arm64/boot/dts/qcom/Makefile
+@@ -325,8 +325,6 @@ dtb-$(CONFIG_ARCH_QCOM)	+= sc7280-idp2.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sc7280-crd-r3.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sc8180x-lenovo-flex-5g.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sc8180x-microsoft-cambria.dtb
+-dtb-$(CONFIG_ARCH_QCOM)	+= sc8180x-microsoft-cambria-rmtfs.dtb
+-dtb-$(CONFIG_ARCH_QCOM)	+= sc8180x-microsoft-cambria-nomodem.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sc8180x-microsoft-carina.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sc8180x-microsoft-caspar.dtb
+ dtb-$(CONFIG_ARCH_QCOM)	+= sc8180x-primus.dtb

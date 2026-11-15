@@ -1,7 +1,7 @@
-From 8f6b5ffa2f6281bc195d8ab9cd292b222b5dda17 Mon Sep 17 00:00:00 2001
+From c9a38b2f12fe6cf3fd50b479249391a34f1aec36 Mon Sep 17 00:00:00 2001
 From: Jingyuan Liang <jingyliang@chromium.org>
 Date: Sat, 24 Oct 2026 00:51:39 +0000
-Subject: [PATCH 07/18] HID: spi-hid: add HID SPI protocol implementation
+Subject: [PATCH 07/41] HID: spi-hid: add HID SPI protocol implementation
 
 This driver follows HID Over SPI Protocol Specification 1.0 available at
 https://www.microsoft.com/en-us/download/details.aspx?id=103325. The
@@ -19,7 +19,7 @@ Signed-off-by: Jingyuan Liang <jingyliang@chromium.org>
  1 file changed, 746 insertions(+), 35 deletions(-)
 
 diff --git a/drivers/hid/spi-hid/spi-hid-core.c b/drivers/hid/spi-hid/spi-hid-core.c
-index 54c278ac8..cd4d76384 100644
+index 54c278ac88..cd4d763840 100644
 --- a/drivers/hid/spi-hid/spi-hid-core.c
 +++ b/drivers/hid/spi-hid/spi-hid-core.c
 @@ -20,14 +20,20 @@
@@ -1063,6 +1063,3 @@ index 54c278ac8..cd4d76384 100644
  	spi_hid_stop_hid(shid);
  
  	shid->ops->assert_reset(shid->ops);
--- 
-2.43.0
-

@@ -1,0 +1,22 @@
+From 22ce25faee79048ee7eb94df2167c6c971fd1734 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 10:33:52 -0500
+Subject: [PATCH 33/41] WIP: Surface Pro X front camera is mounted rotated by
+ 180 degrees
+
+---
+ arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index c6287b3816..0826d83e89 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -535,6 +535,7 @@ camera@36 {
+ 
+ 		/* Only DOVDD is switched by Windows; AVDD/DVDD come from elsewhere */
+ 
++		rotation = <180>;
+ 		orientation = <MEDIA_ORIENTATION_FRONT>;
+ 
+ 		dovdd-supply = <&vreg_l14a_1p8>;

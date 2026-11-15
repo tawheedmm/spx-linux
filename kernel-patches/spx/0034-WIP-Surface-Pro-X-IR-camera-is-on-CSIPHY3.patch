@@ -1,0 +1,45 @@
+From c72d1f2572393829c8469e161565583baa743839 Mon Sep 17 00:00:00 2001
+From: Tawheed Makhdoomi <_@tawheed.cc>
+Date: Fri, 13 Nov 2026 10:43:40 -0500
+Subject: [PATCH 34/41] WIP: Surface Pro X IR camera is on CSIPHY3
+
+With the CSIPHY ids fixed, the OV7251 delivers 640x480 Y10 frames on
+CSIPHY3 (1 data lane); CSIPHY1 and CSIPHY2 see nothing.
+
+---
+ .../boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi    | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+index 0826d83e89..1d51f50d17 100644
+--- a/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
++++ b/arch/arm64/boot/dts/qcom/sc8180x-microsoft-surface-pro-x.dtsi
+@@ -461,7 +461,7 @@ &camss {
+ 	status = "okay";
+ 
+ 	ports {
+-		/* CSIPHY per ACPI CAMP.PCFG: IR 2, rear 3; front 0 or 1 (0x01, unverified) */
++		/* Verified by capture: front on CSIPHY0 (2 lanes), IR on CSIPHY3 (1 lane) */
+ 		port@0 {
+ 			csiphy0_ep: endpoint@0 {
+ 				reg = <0>;
+@@ -471,8 +471,8 @@ csiphy0_ep: endpoint@0 {
+ 			};
+ 		};
+ 
+-		port@2 {
+-			csiphy2_ep: endpoint@0 {
++		port@3 {
++			csiphy3_ep: endpoint@0 {
+ 				reg = <0>;
+ 				clock-lanes = <7>;
+ 				data-lanes = <0>;
+@@ -513,7 +513,7 @@ port {
+ 			cam_ir_ep: endpoint {
+ 				data-lanes = <1>;
+ 				link-frequencies = /bits/ 64 <240000000 319200000>;
+-				remote-endpoint = <&csiphy2_ep>;
++				remote-endpoint = <&csiphy3_ep>;
+ 			};
+ 		};
+ 	};

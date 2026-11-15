@@ -1,0 +1,36 @@
+From 66425a2486c8efb83d3b3fe1893ff1c7e214891e Mon Sep 17 00:00:00 2001
+From: Andrew Gigena <mail@andrewgigena.dev>
+Date: Fri, 6 Nov 2026 03:24:54 +0000
+Subject: [PATCH 19/41] media: qcom: camss: Match VFE lite clocks by name
+ prefix
+
+vfe_match_clock_names() builds the expected lite clock name from
+vfe->id, but vfe->id is the index of the VFE in the resources array.
+On SoCs where the lite VFEs come after the full VFEs, the generated
+name is vfe_lite2, vfe_lite3, ... and never matches the actual
+vfe_lite0/vfe_lite1 clocks, so their rates are never programmed.
+
+This affects SM8150, SC7280 and SC8280XP. On a Pixel 4 (SM8150),
+streaming through VFE-lite0 left cam_cc_ife_lite_0_clk at 19.2 MHz and
+failed with "VFE reset timeout".
+
+Match any clock whose name starts with "vfe_lite" when the VFE is a
+lite instance, in addition to the existing exact matches.
+
+Signed-off-by: Andrew Gigena <mail@andrewgigena.dev>
+---
+ drivers/media/platform/qcom/camss/camss-vfe.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/platform/qcom/camss/camss-vfe.c b/drivers/media/platform/qcom/camss/camss-vfe.c
+index 5af1437276..8b75f7741b 100644
+--- a/drivers/media/platform/qcom/camss/camss-vfe.c
++++ b/drivers/media/platform/qcom/camss/camss-vfe.c
+@@ -922,6 +922,7 @@ static int vfe_match_clock_names(struct vfe_device *vfe,
+ 	return (!strcmp(clock->name, vfe_name) ||
+ 		!strcmp(clock->name, vfe_lite_name) ||
+ 		!strcmp(clock->name, "vfe_lite") ||
++		(vfe->res->is_lite && !strncmp(clock->name, "vfe_lite", 8)) ||
+ 		!strcmp(clock->name, "camnoc_axi") ||
+ 		!strcmp(clock->name, "camnoc_rt_axi"));
+ }
